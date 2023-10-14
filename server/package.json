@@ -1,6 +1,11 @@
 {
   "name": "chat-ata",
-  "version": "1.0.0",
-  "main": "index.js",
-  "license": "MIT"
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
 }
