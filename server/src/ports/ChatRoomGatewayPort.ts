@@ -20,6 +20,10 @@ export type GetChatMembersProps = {
   roomId: ChatRoom["id"];
 };
 
+export type GetChatAiMembersProps = {
+  roomId: ChatRoom["id"];
+};
+
 export interface ChatRoomGatewayPort {
   createChatRoom(p: CreateChatRoomProps): Promise<ChatRoom>;
   addChatRoomMembers(p: AddChatRoomMembersProps): Promise<ChatRoomMember[]>;
@@ -27,4 +31,6 @@ export interface ChatRoomGatewayPort {
     p: UpdateChatRoomMemberGptSystemProps
   ): Promise<ChatRoomMember>;
   getChatMembers(p: GetChatMembersProps): Promise<ChatRoomMember[]>;
+  /** AIのメンバーだけ取得する */
+  getChatAiMembers(p: GetChatAiMembersProps): Promise<ChatRoomMember[]>;
 }

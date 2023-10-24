@@ -10,7 +10,7 @@ export type IsRecursiveGeneratingProps = {
 
 export type SetIsRecursiveGeneratingProps = {
   currentMessageId: Message["id"];
-  isRecursive: boolean;
+  isGenerating: boolean;
 };
 
 export interface MessageSchedulerPort {
@@ -19,6 +19,6 @@ export interface MessageSchedulerPort {
   fetchNextMessage(p: FetchMessageProps): Promise<Message>;
   /** 特定のメッセージが再帰処理を行っているか */
   isRecursiveGenerating(p: IsRecursiveGeneratingProps): Promise<boolean>;
-  /** 再帰処理を行っているメッセージを設定する */
+  /** 再帰処理を行っているメッセージを設定する(現在の再帰処理はキャンセルする) */
   setIsRecursiveGenerating(p: SetIsRecursiveGeneratingProps): Promise<void>;
 }

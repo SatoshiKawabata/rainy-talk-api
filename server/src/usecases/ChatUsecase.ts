@@ -1,9 +1,14 @@
 import { ChatRoom } from "../entities/ChatRoom";
 import { Message } from "../entities/Message";
-import { User } from "../entities/User";
 import { ChatRoomGatewayPort } from "../ports/ChatRoomGatewayPort";
-import { PostMessageProps } from "../ports/MessageGatewayPort";
+import {
+  MessageGatewayPort,
+  PostMessageProps,
+} from "../ports/MessageGatewayPort";
+import { MessageGeneratorGatewayPort } from "../ports/MessageGeneratorGatewayPort";
+import { MessageSchedulerPort } from "../ports/MessageSchedulerPort";
 import { CreateUserProps, UserGatewayPort } from "../ports/UserGatewayPort";
+import { generateMessageRecursive } from "../utils/MessageGenerateUtils";
 
 type InitializeChatProps = {
   users: CreateUserProps[];
@@ -14,7 +19,7 @@ export const initializeChat = async (
   p: InitializeChatProps,
   userGateway: UserGatewayPort,
   chatRoomGateway: ChatRoomGatewayPort
-) => {
+): Promise<string> => {
   // ユーザーの作成
   for (const user of p.users) {
     await userGateway.createUser(user);
@@ -33,11 +38,29 @@ export const initializeChat = async (
 };
 
 // メッセージの投稿
-const postMessage = (p: PostMessageProps) => {
-  // p.parentMessageIdのメッセージが無ければ最初の投稿なので、そのままGatewayのメッセージの投稿メソッドを呼ぶ
-  // p.parentMessageIdのメッセージがあれば子メッセージの紐づけを解除
+export const postMessage = async (
+  p: PostMessageProps,
+  messageGatewayPort: MessageGatewayPort
+): Promise<Message> => {
+  // 親メッセージがあれば、親の子メッセージの紐づけを解除する
+  if (p.parentMessageId) {
+    const otherChildMsg = await messageGatewayPort.findChildMessage({
+      parentId: p.parentMessageId,
+    });
+
+    if (otherChildMsg) {
+      // p.parentMessageIdのメッセージがあれば子メッセージの紐づけを解除
+      await messageGatewayPort.removeParentMessage({ id: otherChildMsg.id });
+    }
+  }
+
   // Gatewayのメッセージの投稿メソッドを呼ぶ
+  const newMsg = await messageGatewayPort.postMessage({
+    ...p,
+  });
+
   // メッセージを返す
+  return newMsg;
 };
 
 // 次のメッセージを取得
@@ -45,29 +68,44 @@ type RequestNextMessageProps = {
   messageId: Message["id"];
   roomId: ChatRoom["id"];
 };
-const requestNextMessage = (p: RequestNextMessageProps) => {
-  // DBにあれば返す
-  // DBにない かつ 再帰処理中の場合、再帰処理を待って生成されたメッセージを返す
-  // DBにない場合、次のメッセージを生成する再帰処理を起動
-  // 再帰処理で生成したメッセージを返す
-};
 
-// 再帰処理を起動
-type GenerateMessageRecursiveProps = {
-  messageId: Message["id"];
-};
-const generateMessageRecursive = (p: GenerateMessageRecursiveProps) => {
-  // 再帰処理をしているメッセージ(p.messageId)をGatewayに伝える
-  // 現在のメッセージを取得
-  // もう一方のAIのメッセージを文字数のリミットに達するまで再帰的に取得する
-  // 上記メッセージをつなげる
-  // ChatGPTに500文字以内で要約を要求
-  // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
-  // メッセージ生成完了後、messageIdのメッセージの子メッセージを取得
-  // 元のメッセージに子メッセージがあれば(割り込まれていれば)、エラーを返す
-  // 親メッセージを辿っていき途切れている場合、一連のメッセージを全て削除して、エラーを返す
-  // 上記いずれも当てはまらない場合、メッセージをGatewayに保存
-  // メッセージを返す(最初の一回だけ)
-  // 最新のmessageIdの再帰処理の終了を伝える
-  // 上記を10回繰り返す
+export const requestNextMessage = async (
+  p: RequestNextMessageProps,
+  messageGatewayPort: MessageGatewayPort,
+  messageSchedulerPort: MessageSchedulerPort,
+  chatRoomGatewayPort: ChatRoomGatewayPort,
+  userGatewayPort: UserGatewayPort,
+  messageGeneratorGatewayPort: MessageGeneratorGatewayPort
+): Promise<Message> => {
+  // 次のメッセージ(messageIdの子メッセージ)がDBにあれば返す
+  const childMsg = await messageGatewayPort.findChildMessage({
+    parentId: p.messageId,
+  });
+  if (childMsg) {
+    return childMsg;
+  }
+
+  const isGenerating = await messageSchedulerPort.isRecursiveGenerating({
+    currentMessageId: p.messageId,
+  });
+  if (isGenerating) {
+    // 次のメッセージがDBにない かつ 再帰処理中の場合、再帰処理を待って生成されたメッセージを返す
+    const msg = await messageSchedulerPort.fetchNextMessage({
+      currentMessageId: p.messageId,
+    });
+    return msg;
+  }
+  // 次のメッセージがDBにない場合、次のメッセージを生成する再帰処理generateMessageRecursiveを呼ぶ
+  const { nextMessage } = await generateMessageRecursive(
+    {
+      currentMessageId: p.messageId,
+    },
+    messageGatewayPort,
+    messageSchedulerPort,
+    chatRoomGatewayPort,
+    userGatewayPort,
+    messageGeneratorGatewayPort
+  );
+  // 再帰処理で生成したメッセージを返す
+  return nextMessage;
 };

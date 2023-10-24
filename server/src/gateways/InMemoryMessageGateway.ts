@@ -3,7 +3,7 @@ import {
   DeleteMessageRecursiveProps,
   FindChildMessageProps,
   FindMessageProps,
-  GetMessagesRecursivePropsByUser,
+  GetMessagesRecursiveByUserProps,
   HasChainToRootProps,
   MessageGatewayPort,
   PostMessageProps,
@@ -75,7 +75,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     msg?.parentMessageId;
   }
   getMessagesRecursiveByUser(
-    p: GetMessagesRecursivePropsByUser
+    p: GetMessagesRecursiveByUserProps
   ): Promise<Message[]> {
     throw new Error("Method not implemented.");
   }

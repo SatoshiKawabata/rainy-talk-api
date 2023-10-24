@@ -7,10 +7,10 @@ export type CreateUserProps = {
 };
 
 export type GetUserProps = {
-  id: number;
+  ids: User["id"][];
 };
 
 export interface UserGatewayPort {
   createUser(p: CreateUserProps): Promise<User>;
-  getUser(p: GetUserProps): Promise<User>;
+  getUsers(p: GetUserProps): Promise<User[]>;
 }

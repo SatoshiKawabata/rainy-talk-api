@@ -14,7 +14,7 @@ export type FindMessageProps = {
 
 export type FindChildMessageProps = {
   /** このidのメッセージの子メッセージを探す */
-  id: number;
+  parentId: number;
 };
 
 export type DeleteMessageRecursiveProps = {
@@ -27,13 +27,23 @@ export type HasChainToRootProps = {
   id: number;
 };
 
-export type GetMessagesRecursivePropsByUser = {
+export type GetMessagesRecursiveByUserProps = {
   /** 再起取得を始めるメッセージ */
   fromMessageId: Message["id"];
   /** フィルターするユーザーID */
   filteringUserId: User["id"];
-  /** 再帰の回数 */
-  limit: number;
+  /** 文字数のリミット */
+  textLimit: number;
+};
+
+type RemoteParentMessageProps = {
+  /** このidのメッセージの親メッセージIDを削除 */
+  id: number;
+};
+
+type GetContinuousMessagesByUserProps = {
+  /** 再起取得を始めるメッセージ */
+  fromMessageId: Message["id"];
 };
 
 export interface MessageGatewayPort {
@@ -44,6 +54,16 @@ export interface MessageGatewayPort {
   hasChainToRoot(p: HasChainToRootProps): Promise<boolean>;
   /** 特定のユーザーのメッセージを再帰的に取得していく */
   getMessagesRecursiveByUser(
-    p: GetMessagesRecursivePropsByUser
+    p: GetMessagesRecursiveByUserProps
+  ): Promise<Message[]>;
+  /** 特定のユーザーのメッセージを再帰的に削除していく */
+  deleteMessagesRecursiveByUser(
+    p: GetMessagesRecursiveByUserProps
+  ): Promise<Message[]>;
+  /** メッセージの親子関係を解除 */
+  removeParentMessage(p: RemoteParentMessageProps): Promise<void>;
+  /** 同じユーザーの連続した発言を取得  */
+  getContinuousMessagesByUser(
+    p: GetContinuousMessagesByUserProps
   ): Promise<Message[]>;
 }
