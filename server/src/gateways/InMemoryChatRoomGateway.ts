@@ -45,6 +45,9 @@ export class InMemoryChatRoomGateway implements ChatRoomGatewayPort {
     return Promise.resolve(newChatRoom);
   }
   getChatMembers(p: GetChatMembersProps): Promise<ChatRoomMember[]> {
-    throw new Error("Method not implemented.");
+    const targetRoomMembers = chatRoomMembers.filter(
+      (member) => member.roomId === p.roomId
+    );
+    return Promise.resolve(targetRoomMembers);
   }
 }

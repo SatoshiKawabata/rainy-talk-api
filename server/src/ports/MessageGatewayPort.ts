@@ -1,3 +1,4 @@
+import { ChatRoom } from "../entities/ChatRoom";
 import { Message } from "../entities/Message";
 import { User } from "../entities/User";
 
@@ -36,28 +37,29 @@ export type GetMessagesRecursiveByUserProps = {
   textLimit: number;
 };
 
-type RemoteParentMessageProps = {
+export type RemoteParentMessageProps = {
   /** このidのメッセージの親メッセージIDを削除 */
   id: number;
 };
 
-type GetContinuousMessagesByUserProps = {
+export type GetContinuousMessagesByUserProps = {
   /** 再起取得を始めるメッセージ */
   fromMessageId: Message["id"];
+};
+
+type PollingChildMessageProps = {
+  currentMessageId: Message["id"];
 };
 
 export interface MessageGatewayPort {
   postMessage(p: PostMessageProps): Promise<Message>;
   findMessage(p: FindMessageProps): Promise<Message | undefined>;
   findChildMessage(p: FindChildMessageProps): Promise<Message | undefined>;
+  /** 再帰的に親がなくなるまで削除していく */
   deleteMessageRecursive(p: DeleteMessageRecursiveProps): Promise<void>;
   hasChainToRoot(p: HasChainToRootProps): Promise<boolean>;
   /** 特定のユーザーのメッセージを再帰的に取得していく */
   getMessagesRecursiveByUser(
-    p: GetMessagesRecursiveByUserProps
-  ): Promise<Message[]>;
-  /** 特定のユーザーのメッセージを再帰的に削除していく */
-  deleteMessagesRecursiveByUser(
     p: GetMessagesRecursiveByUserProps
   ): Promise<Message[]>;
   /** メッセージの親子関係を解除 */
@@ -66,4 +68,6 @@ export interface MessageGatewayPort {
   getContinuousMessagesByUser(
     p: GetContinuousMessagesByUserProps
   ): Promise<Message[]>;
+  /** 対象の子メッセージが生成されるまで待つ */
+  pollingChildMessage(p: PollingChildMessageProps): Promise<Message>;
 }

@@ -3,21 +3,73 @@ import {
   DeleteMessageRecursiveProps,
   FindChildMessageProps,
   FindMessageProps,
+  GetContinuousMessagesByUserProps,
   GetMessagesRecursiveByUserProps,
   HasChainToRootProps,
   MessageGatewayPort,
   PostMessageProps,
+  RemoteParentMessageProps,
 } from "../ports/MessageGatewayPort";
 
 const messages: Message[] = [];
 
 export class InMemoryMessageGateway implements MessageGatewayPort {
+  async pollingChildMessage(p: { currentMessageId: number }): Promise<Message> {
+    let childMsg: Message | undefined;
+    let count = 0;
+    while (!childMsg) {
+      count++;
+      // 一秒待機する
+      await new Promise((res) => setTimeout(res, 1000));
+      // 子メッセージがみつかるまでループし続ける
+      childMsg = await this.findChildMessage({
+        parentId: p.currentMessageId,
+      });
+      if (count > 300) {
+        // 300回ループしても見つからなかったらループを抜ける
+        throw new Error(
+          `Polling child message timeout. : ${JSON.stringify(p)}`
+        );
+      }
+    }
+    return childMsg;
+  }
+  async removeParentMessage({ id }: RemoteParentMessageProps): Promise<void> {
+    const msg = await this.findMessage({ id: id });
+    if (msg) {
+      delete msg.parentMessageId;
+    }
+  }
+  async getContinuousMessagesByUser({
+    fromMessageId,
+  }: GetContinuousMessagesByUserProps): Promise<Message[]> {
+    let msg = await this.findMessage({ id: fromMessageId });
+    if (!msg) {
+      throw new Error(`No such message id. : ${fromMessageId}`);
+    }
+    const results: Message[] = [msg];
+    const userId = msg.userId;
+    while (msg?.parentMessageId) {
+      const parentMsg = await this.findMessage({ id: msg.parentMessageId });
+      if (parentMsg?.userId === userId) {
+        msg = parentMsg;
+        results.push(msg);
+      } else {
+        // 同じユーザーの発言でなければループ終了
+        msg = undefined;
+      }
+    }
+
+    return results;
+  }
   async postMessage(p: PostMessageProps): Promise<Message> {
     const roomMessages = messages.filter((msg) => msg.roomId === p.roomId);
     if (p.parentMessageId) {
       const parentMsg = await this.findMessage({ id: p.parentMessageId });
       if (parentMsg) {
-        const childMsg = await this.findChildMessage({ id: parentMsg.id });
+        const childMsg = await this.findChildMessage({
+          parentId: parentMsg.id,
+        });
         if (childMsg) {
           // 既に親メッセージが子メッセージを持っている
           throw new Error(
@@ -63,20 +115,60 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     const msg = messages.find((msg) => msg.id === p.id);
     return Promise.resolve(msg);
   }
-  findChildMessage(p: FindChildMessageProps): Promise<Message | undefined> {
-    const childMsg = messages.find((msg) => msg.parentMessageId === p.id);
+  findChildMessage({
+    parentId,
+  }: FindChildMessageProps): Promise<Message | undefined> {
+    const childMsg = messages.find((msg) => msg.parentMessageId === parentId);
     return Promise.resolve(childMsg);
   }
-  deleteMessageRecursive(p: DeleteMessageRecursiveProps): Promise<void> {
-    throw new Error("Method not implemented.");
+  deleteMessageRecursive({ id }: DeleteMessageRecursiveProps): Promise<void> {
+    const map = new Map(messages.map((msg) => [msg.id, msg]));
+    let msg = map.get(id);
+    while (msg) {
+      const parentId = msg.parentMessageId;
+      map.delete(msg.id);
+      if (parentId) {
+        msg = map.get(parentId);
+      } else {
+        msg = undefined;
+      }
+    }
+    // messagesを上書き
+    const newMessages = Array.from(map).map((val) => val[1]);
+    messages.splice(0).push(...newMessages);
+    return Promise.resolve();
   }
-  async hasChainToRoot(p: HasChainToRootProps): Promise<boolean> {
-    let msg = await this.findChildMessage({ id: p.id });
-    msg?.parentMessageId;
+  async hasChainToRoot({ id }: HasChainToRootProps): Promise<boolean> {
+    const map = new Map(messages.map((msg) => [msg.id, msg]));
+    let msg = map.get(id);
+    while (msg?.parentMessageId) {
+      msg = map.get(msg.parentMessageId);
+    }
+    return Promise.resolve(!!msg?.isRoot);
   }
-  getMessagesRecursiveByUser(
-    p: GetMessagesRecursiveByUserProps
-  ): Promise<Message[]> {
-    throw new Error("Method not implemented.");
+  getMessagesRecursiveByUser({
+    filteringUserId,
+    fromMessageId,
+    textLimit,
+  }: GetMessagesRecursiveByUserProps): Promise<Message[]> {
+    const map = new Map(messages.map((msg) => [msg.id, msg]));
+    let msg = map.get(fromMessageId);
+    let textCount = 0;
+    const resultMessages: Message[] = [];
+
+    if (msg?.userId === filteringUserId) {
+      resultMessages.push(msg);
+      textCount += msg.content.length;
+    }
+
+    while (msg?.parentMessageId && textCount <= textLimit) {
+      msg = map.get(msg.parentMessageId);
+      if (msg?.userId === filteringUserId) {
+        resultMessages.push(msg);
+        textCount += msg.content.length;
+      }
+    }
+
+    return Promise.resolve(resultMessages);
   }
 }

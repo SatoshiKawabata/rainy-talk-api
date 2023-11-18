@@ -8,12 +8,8 @@ import {
 const users: User[] = [];
 
 export class InMemoryUserGateway implements UserGatewayPort {
-  getUser(p: GetUserProps): Promise<User> {
-    const user = users.find((user) => user.id === p.id);
-    if (!user) {
-      throw new Error(`No such user: ${JSON.stringify(p)}`);
-    }
-    return Promise.resolve(user);
+  getUsers(p: GetUserProps): Promise<User[]> {
+    return Promise.resolve(users.filter((user) => p.ids.includes(user.id)));
   }
 
   createUser(p: CreateUserProps): Promise<User> {

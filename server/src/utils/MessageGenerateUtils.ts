@@ -120,9 +120,15 @@ const generateNextMsg = async (
   }
 
   // 現在のメッセージのAIのメッセージを文字数のリミットに達するまで再帰的に取得する
-  const aiMembers = await chatRoomGatewayPort.getChatAiMembers({
+  const roomMembers = await chatRoomGatewayPort.getChatMembers({
     roomId: currentMsg.roomId,
   });
+  const aiUserIds = (
+    await userGatewayPort.getUsers({ ids: roomMembers.map((m) => m.userId) })
+  )
+    .filter((user) => user.isAi)
+    .map((u) => u.id);
+  const aiMembers = roomMembers.filter((m) => aiUserIds.includes(m.userId));
   const currentMember = aiMembers.find((m) => m.userId === currentMsgUser.id);
   if (!currentMember) {
     throw new UseCaseError(

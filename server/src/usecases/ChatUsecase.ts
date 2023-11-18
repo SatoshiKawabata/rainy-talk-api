@@ -1,5 +1,6 @@
 import { ChatRoom } from "../entities/ChatRoom";
 import { Message } from "../entities/Message";
+import { ErrorCodes, UseCaseError } from "../errors/UseCaseError";
 import { ChatRoomGatewayPort } from "../ports/ChatRoomGatewayPort";
 import {
   MessageGatewayPort,
@@ -89,8 +90,10 @@ export const requestNextMessage = async (
     currentMessageId: p.messageId,
   });
   if (isGenerating) {
-    // 次のメッセージがDBにない かつ 再帰処理中の場合、再帰処理を待って生成されたメッセージを返す
-    const msg = await messageSchedulerPort.fetchNextMessage({
+    // 次のメッセージがDBにない かつ 再帰処理中の場合、
+    // 再帰処理を待つためにMessageGatewayに対してポーリングを行って
+    // 生成されたメッセージを返す
+    const msg = await messageGatewayPort.pollingChildMessage({
       currentMessageId: p.messageId,
     });
     return msg;
