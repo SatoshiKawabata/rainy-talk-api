@@ -1,20 +1,27 @@
-import { Message } from "../entities/Message";
-import { MessageGeneratorGatewayPort } from "../ports/MessageGeneratorGatewayPort";
+import {
+  GenerateProps,
+  MessageGeneratorGatewayPort,
+  SummarizeProps,
+} from "../ports/MessageGeneratorGatewayPort";
+import { createChatCompletion } from "../utils/openAiUtils";
+
+const OPENAI_API_KEY = process.env["OPENAI_API_KEY"] || "";
 
 export class InMemoryMessageGeneratorGateway
   implements MessageGeneratorGatewayPort
 {
-  summarize(p: { messages: Message[] }): Promise<string> {
+  summarize(p: SummarizeProps): Promise<string> {
     throw new Error("Method not implemented.");
   }
-  generate(p: {
-    infos: {
-      aiMessageContent: string;
-      humanMessageContent?: string | undefined;
-      userName: string;
-      gptSystem: string;
-    }[];
-  }): Promise<string> {
+  generate({ infos }: GenerateProps): Promise<string> {
+    // generateする
+    // createChatCompletion(OPENAI_API_KEY, {
+    //   messages:[
+    //     {
+    //       content:
+    //     }
+    //   ]
+    // })
     throw new Error("Method not implemented.");
   }
 }

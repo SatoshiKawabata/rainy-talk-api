@@ -9,11 +9,11 @@ type MessageInfo = {
   gptSystem: User["originalGptSystem"] | ChatRoomMember["gptSystem"];
 };
 
-type SummarizeProps = {
+export type SummarizeProps = {
   messages: Message[];
 };
 
-type GenerateProps = {
+export type GenerateProps = {
   infos: MessageInfo[];
 };
 
