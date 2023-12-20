@@ -7,13 +7,29 @@ import {
 import { createChatCompletion } from "../utils/OpenAiUtils";
 
 const OPENAI_API_KEY = process.env["OPENAI_API_KEY"] || "";
+const MAX_TEXT_COUNT_TO_SUMMARIZE = 500;
 
 export class InMemoryMessageGeneratorGateway
   implements MessageGeneratorGatewayPort
 {
-  summarize(p: SummarizeProps): Promise<string> {
-    throw new Error("Method not implemented.");
+  summarize({ messages }: SummarizeProps): Promise<string> {
+    const joinedMessage = messages.map((msg) => msg.content).join(`
+`);
+    if (joinedMessage.length <= MAX_TEXT_COUNT_TO_SUMMARIZE) {
+      return Promise.resolve(joinedMessage);
+    }
+
+    return createChatCompletion(OPENAI_API_KEY, {
+      messages: [
+        {
+          content: `次の文章を${MAX_TEXT_COUNT_TO_SUMMARIZE}文字以内で要約してください。:
+${joinedMessage}`,
+          role: "user",
+        },
+      ],
+    });
   }
+
   generate({ info }: GenerateProps): Promise<string> {
     // generateする
     const messages: ChatCompletionMessageParam[] = [
