@@ -156,16 +156,14 @@ const generateNextMsg = async (
   });
   // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
   const generatedText = await messageGeneratorGatewayPort.generate({
-    infos: [
-      {
-        gptSystem: currentMember?.gptSystem
-          ? currentMember?.gptSystem
-          : currentMsgUser.originalGptSystem,
-        userName: currentMsgUser.name,
-        aiMessageContent: summarizedAiMsg,
-        humanMessageContent: humanContinuousMsgText,
-      },
-    ],
+    info: {
+      gptSystem: currentMember?.gptSystem
+        ? currentMember?.gptSystem
+        : currentMsgUser.originalGptSystem,
+      userName: currentMsgUser.name,
+      aiMessageContent: summarizedAiMsg,
+      humanMessageContent: humanContinuousMsgText,
+    },
   });
   // メッセージ生成中に割り込まれていないかの判定処理(メッセージ生成完了後、messageIdのメッセージの子メッセージを取得)
   const isInterrupted = await messageGatewayPort.findChildMessage({

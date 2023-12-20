@@ -14,7 +14,7 @@ export type SummarizeProps = {
 };
 
 export type GenerateProps = {
-  infos: MessageInfo[];
+  info: MessageInfo;
 };
 
 export interface MessageGeneratorGatewayPort {
