@@ -1,4 +1,5 @@
 import { ChatRoom } from "../entities/ChatRoom";
+import { ChatRoomMember } from "../entities/ChatRoomMember";
 import { Message } from "../entities/Message";
 import { ErrorCodes, UseCaseError } from "../errors/UseCaseError";
 import { ChatRoomGatewayPort } from "../ports/ChatRoomGatewayPort";
@@ -11,16 +12,21 @@ import { MessageSchedulerPort } from "../ports/MessageSchedulerPort";
 import { CreateUserProps, UserGatewayPort } from "../ports/UserGatewayPort";
 import { generateMessageRecursive } from "../utils/MessageGenerateUtils";
 
-type InitializeChatProps = {
+export type InitializeChatProps = {
   users: CreateUserProps[];
   chatRoomName: string;
+};
+
+export type InitializeChatResponse = {
+  room: ChatRoom;
+  members: ChatRoomMember[];
 };
 
 export const initializeChat = async (
   p: InitializeChatProps,
   userGateway: UserGatewayPort,
   chatRoomGateway: ChatRoomGatewayPort
-): Promise<string> => {
+): Promise<InitializeChatResponse> => {
   // ユーザーの作成
   for (const user of p.users) {
     await userGateway.createUser(user);
@@ -31,11 +37,14 @@ export const initializeChat = async (
   // チャットルームの作成
   const room = await chatRoomGateway.createChatRoom({ name: p.chatRoomName });
   // チャットメンバーの追加
-  await chatRoomGateway.addChatRoomMembers({
+  const members = await chatRoomGateway.addChatRoomMembers({
     roomId: room.id,
     userIds: users.map((user) => user.id),
   });
-  return "success!";
+  return {
+    room,
+    members,
+  };
 };
 
 // メッセージの投稿

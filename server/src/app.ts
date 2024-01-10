@@ -18,9 +18,14 @@ app.get("/hello", (req: Request, res: Response) => {
   res.status(200).json({ message: "Hello World" });
 });
 
+app.post("/data", (req, res) => {
+  const data = req.body;
+  res.status(201).json({ message: "Data received", data });
+});
+
 app.post("/initialize", async (req: Request, res: Response) => {
-  const str = await initializeChat(req.body, gateWays.user, gateWays.chatRoom);
-  res.json({ message: str });
+  const data = await initializeChat(req.body, gateWays.user, gateWays.chatRoom);
+  res.json(data);
 });
 
 app.post("/message", async (req: Request, res: Response) => {
