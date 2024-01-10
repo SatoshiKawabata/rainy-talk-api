@@ -5,6 +5,7 @@ import {
   SummarizeProps,
 } from "../ports/MessageGeneratorGatewayPort";
 import { createChatCompletion } from "../utils/OpenAiUtils";
+import "dotenv/config";
 
 const OPENAI_API_KEY = process.env["OPENAI_API_KEY"] || "";
 const MAX_TEXT_COUNT_TO_SUMMARIZE = 500;
