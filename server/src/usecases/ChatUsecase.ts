@@ -28,9 +28,6 @@ export const initializeChat = async (
   chatRoomGateway: ChatRoomGatewayPort
 ): Promise<InitializeChatResponse> => {
   // ユーザーの作成
-  for (const user of p.users) {
-    await userGateway.createUser(user);
-  }
   const users = await Promise.all(
     p.users.map(async (user) => await userGateway.createUser(user))
   );
@@ -74,7 +71,7 @@ export const postMessage = async (
 };
 
 // 次のメッセージを取得
-type RequestNextMessageProps = {
+export type RequestNextMessageProps = {
   messageId: Message["id"];
   roomId: ChatRoom["id"];
 };

@@ -26,8 +26,8 @@ export class InMemoryChatRoomGateway implements ChatRoomGatewayPort {
   }
 
   addChatRoomMembers(p: AddChatRoomMembersProps): Promise<ChatRoomMember[]> {
-    const newMembers: ChatRoomMember[] = p.userIds.map((userId) => ({
-      id: chatRoomMembers.length,
+    const newMembers: ChatRoomMember[] = p.userIds.map((userId, i) => ({
+      id: chatRoomMembers.length + i,
       gptSystem: "",
       roomId: p.roomId,
       userId,
