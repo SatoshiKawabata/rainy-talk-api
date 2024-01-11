@@ -21,8 +21,10 @@
     "openai": "^4.19.0"
   },
   "scripts": {
-    "dev": "ts-node-dev ./src/server.ts",
-    "start": "ts-node ./src/server.ts",
-    "test": "jest"
+    "dev": "npx ts-node-dev ./src/server.ts",
+    "start": "npx ts-node ./src/server.ts",
+    "test": "jest",
+    "docker:build": "docker build . -t chat-ata:latest",
+    "docker:run": "docker run -p 3000:3000 chat-ata:latest"
   }
 }
