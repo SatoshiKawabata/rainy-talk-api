@@ -9,19 +9,23 @@ import {
 import gateWays from "./gateways";
 
 const app = express();
-const port = 3000;
 
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.get("/hello", (req: Request, res: Response) => {
-  res.json({ message: "Hello World" });
+  res.status(200).json({ message: "Hello World" });
+});
+
+app.post("/data", (req, res) => {
+  const data = req.body;
+  res.status(201).json({ message: "Data received", data });
 });
 
 app.post("/initialize", async (req: Request, res: Response) => {
-  const str = await initializeChat(req.body, gateWays.user, gateWays.chatRoom);
-  res.json({ message: str });
+  const data = await initializeChat(req.body, gateWays.user, gateWays.chatRoom);
+  res.json(data);
 });
 
 app.post("/message", async (req: Request, res: Response) => {
@@ -41,6 +45,4 @@ app.get("/next_message", async (req: Request, res: Response) => {
   res.json({ message });
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-});
+export default app;
