@@ -1,4 +1,4 @@
-import { ChatCompletionMessageParam } from "openai/resources";
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 import {
   GenerateProps,
   MessageGeneratorGatewayPort,
