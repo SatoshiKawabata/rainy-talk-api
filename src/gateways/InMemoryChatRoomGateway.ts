@@ -50,4 +50,9 @@ export class InMemoryChatRoomGateway implements ChatRoomGatewayPort {
     );
     return Promise.resolve(targetRoomMembers);
   }
+  async findChatRoomMember(p: {
+    userId: number;
+  }): Promise<ChatRoomMember | undefined> {
+    return chatRoomMembers.find((member) => member.userId === p.userId);
+  }
 }

@@ -92,7 +92,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
           p
         )}`
       );
-    } else if (roomMessages.length > 0 && !p.parentMessageId) {
+    } else if (roomMessages.length > 0 && p.parentMessageId == null) {
       // 既にメッセージが投稿されているので親メッセージを設定しないといけない
       throw new Error(
         `parentMessageId is necessary when there are some messages. : ${JSON.stringify(
@@ -109,6 +109,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
       parentMessageId: p.parentMessageId,
     };
     messages.push(newMessage);
+    console.log("push messages", messages);
     return Promise.resolve(newMessage);
   }
   findMessage(p: FindMessageProps): Promise<Message | undefined> {

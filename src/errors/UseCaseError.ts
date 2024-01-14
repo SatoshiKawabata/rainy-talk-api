@@ -1,5 +1,6 @@
 export enum ErrorCodes {
   FailedToGenerateNextMessage = "FailedToGenerateNextMessage",
+  FailedToPostMessage = "FailedToPostMessage",
 }
 
 export class UseCaseError extends Error {

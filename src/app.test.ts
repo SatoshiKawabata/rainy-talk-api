@@ -7,6 +7,29 @@ import {
 } from "./usecases/ChatUseCase";
 import { PostMessageProps } from "./ports/MessageGatewayPort";
 
+jest.mock("openai", () => {
+  return {
+    __esModule: true, // ESモジュールのシミュレート
+    default: class {
+      chat = {
+        completions: {
+          create: async () => {
+            return {
+              choices: [
+                {
+                  message: {
+                    content: "first message",
+                  },
+                },
+              ],
+            };
+          },
+        },
+      };
+    },
+  };
+});
+
 describe("GET /hello", () => {
   it("responds with json", async () => {
     const response = await request(app)
@@ -83,7 +106,7 @@ describe("POST /initialize", () => {
 });
 
 describe("POST /message", () => {
-  it("can post message", async () => {
+  it("最初のメッセージを投稿する。それがAIだったら再帰的にメッセージを生成していく", async () => {
     const testData: PostMessageProps = {
       content: "first message",
       roomId: 0,
@@ -122,10 +145,11 @@ describe("GET /next_message", () => {
     expect(response.body).toEqual({
       message: {
         content: "first message",
-        id: 0,
+        id: 1,
+        isRoot: false,
+        parentMessageId: 0,
         roomId: 0,
         userId: 1,
-        isRoot: true,
       },
     });
   });

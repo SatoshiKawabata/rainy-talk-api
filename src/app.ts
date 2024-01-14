@@ -29,7 +29,13 @@ app.post("/initialize", async (req: Request, res: Response) => {
 });
 
 app.post("/message", async (req: Request, res: Response) => {
-  const message = await postMessage(req.body, gateWays.message);
+  const message = await postMessage(
+    req.body,
+    gateWays.message,
+    gateWays.messageGenerator,
+    gateWays.user,
+    gateWays.chatRoom
+  );
   res.json({ message });
 });
 

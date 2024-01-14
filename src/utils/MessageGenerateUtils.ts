@@ -129,15 +129,15 @@ const generateNextMsg = async (
     .filter((user) => user.isAi)
     .map((u) => u.id);
   const aiMembers = roomMembers.filter((m) => aiUserIds.includes(m.userId));
-  const currentMember = aiMembers.find((m) => m.userId === currentMsgUser.id);
-  if (!currentMember) {
+  const currentAiMember = aiMembers.find((m) => m.userId === currentMsgUser.id);
+  if (!currentAiMember) {
     throw new UseCaseError(
       `member not found: ${currentMsgUser.id}`,
       ErrorCodes.FailedToGenerateNextMessage
     );
   }
-  const nextMember = aiMembers.find((m) => m.userId !== currentMsgUser.id);
-  if (!nextMember) {
+  const nextAiMember = aiMembers.find((m) => m.userId !== currentMsgUser.id);
+  if (!nextAiMember) {
     throw new UseCaseError(
       `other member not found: ${JSON.stringify(aiMembers)}`,
       ErrorCodes.FailedToGenerateNextMessage
@@ -157,8 +157,8 @@ const generateNextMsg = async (
   // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
   const generatedText = await messageGeneratorGatewayPort.generate({
     info: {
-      gptSystem: currentMember?.gptSystem
-        ? currentMember?.gptSystem
+      gptSystem: currentAiMember?.gptSystem
+        ? currentAiMember?.gptSystem
         : currentMsgUser.originalGptSystem,
       userName: currentMsgUser.name,
       aiMessageContent: summarizedAiMsg,

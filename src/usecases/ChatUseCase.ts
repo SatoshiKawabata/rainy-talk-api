@@ -2,6 +2,7 @@ import { ChatRoom } from "../entities/ChatRoom";
 import { ChatRoomMember } from "../entities/ChatRoomMember";
 import { Message } from "../entities/Message";
 import { ErrorCodes, UseCaseError } from "../errors/UseCaseError";
+import { InMemoryUserGateway } from "../gateways/InMemoryUserGateway";
 import { ChatRoomGatewayPort } from "../ports/ChatRoomGatewayPort";
 import {
   MessageGatewayPort,
@@ -47,23 +48,52 @@ export const initializeChat = async (
 // メッセージの投稿
 export const postMessage = async (
   p: PostMessageProps,
-  messageGatewayPort: MessageGatewayPort
+  messageGateway: MessageGatewayPort,
+  messageGeneratorGateway: MessageGeneratorGatewayPort,
+  userGateway: InMemoryUserGateway,
+  chatRoomGateway: ChatRoomGatewayPort
 ): Promise<Message> => {
   // 親メッセージがあれば、親の子メッセージの紐づけを解除する
   if (p.parentMessageId) {
-    const otherChildMsg = await messageGatewayPort.findChildMessage({
+    const otherChildMsg = await messageGateway.findChildMessage({
       parentId: p.parentMessageId,
     });
 
     if (otherChildMsg) {
       // p.parentMessageIdのメッセージがあれば子メッセージの紐づけを解除
-      await messageGatewayPort.removeParentMessage({ id: otherChildMsg.id });
+      await messageGateway.removeParentMessage({ id: otherChildMsg.id });
     }
   }
 
   // Gatewayのメッセージの投稿メソッドを呼ぶ
-  const newMsg = await messageGatewayPort.postMessage({
+  const newMsg = await messageGateway.postMessage({
     ...p,
+  });
+
+  // 投稿したメッセージがAIの場合、再帰的にメッセージを生成する
+  const users = await userGateway.getUsers({ ids: [p.userId] });
+  if (users.length === 0) {
+    throw new UseCaseError(
+      `user not found: userId=${p.userId}`,
+      ErrorCodes.FailedToPostMessage
+    );
+  }
+  const chatMember = await chatRoomGateway.findChatRoomMember({
+    userId: p.userId,
+  });
+  if (!chatMember) {
+    throw new UseCaseError(
+      `chat member not found: userId=${p.userId}`,
+      ErrorCodes.FailedToPostMessage
+    );
+  }
+  const [user] = users;
+  messageGeneratorGateway.generate({
+    info: {
+      aiMessageContent: newMsg.content,
+      userName: user.name,
+      gptSystem: chatMember.gptSystem ?? user.originalGptSystem,
+    },
   });
 
   // メッセージを返す
