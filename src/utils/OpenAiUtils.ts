@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { ChatCompletionMessageParam } from "openai/resources";
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
 type RequestParam = {
   messages: ChatCompletionMessageParam[];
