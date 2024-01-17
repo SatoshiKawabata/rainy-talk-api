@@ -1,5 +1,5 @@
 {
-  "name": "chat-ata",
+  "name": "rainy-talk-api",
   "devDependencies": {
     "@types/cors": "^2.8.15",
     "@types/express": "^4.17.20",
@@ -24,7 +24,8 @@
     "dev": "npx ts-node-dev ./src/server.ts",
     "start": "npx ts-node ./src/server.ts",
     "test": "jest",
-    "docker:build": "docker build . -t chat-ata:latest",
-    "docker:run": "docker run -p 3000:3000 chat-ata:latest"
+    "docker:build": "docker build --platform linux/x86_64 -t rainy-talk-api:latest .",
+    "docker:run": "docker run -p 3000:3000 rainy-talk-api:latest",
+    "docker:push": "docker push gcr.io/chat-ata/rainy-talk-api:latest"
   }
 }
