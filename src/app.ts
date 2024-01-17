@@ -7,6 +7,7 @@ import {
   requestNextMessage,
 } from "./usecases/ChatUseCase";
 import gateWays from "./gateways";
+import { UseCaseError } from "./errors/UseCaseError";
 
 const app = express();
 
@@ -24,31 +25,50 @@ app.post("/data", (req, res) => {
 });
 
 app.post("/initialize", async (req: Request, res: Response) => {
-  const data = await initializeChat(req.body, gateWays.user, gateWays.chatRoom);
-  res.json(data);
+  console.log("/initialize", req.body);
+  try {
+    const data = await initializeChat(
+      req.body,
+      gateWays.user,
+      gateWays.chatRoom
+    );
+    res.json(data);
+  } catch (e: unknown) {
+    const error = e as UseCaseError;
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
 });
 
 app.post("/message", async (req: Request, res: Response) => {
-  const message = await postMessage(
-    req.body,
-    gateWays.message,
-    gateWays.messageGenerator,
-    gateWays.user,
-    gateWays.chatRoom
-  );
-  res.json({ message });
+  console.log("/message", req.body);
+  try {
+    const message = await postMessage(req.body, gateWays.message);
+    res.json({ message });
+  } catch (e: unknown) {
+    const error = e as UseCaseError;
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
 });
 
 app.get("/next_message", async (req: Request, res: Response) => {
-  const message = await requestNextMessage(
-    req.body,
-    gateWays.message,
-    gateWays.messageScheduler,
-    gateWays.chatRoom,
-    gateWays.user,
-    gateWays.messageGenerator
-  );
-  res.json({ message });
+  console.log("/next_message", req.body);
+  try {
+    const message = await requestNextMessage(
+      req.body,
+      gateWays.message,
+      gateWays.messageScheduler,
+      gateWays.chatRoom,
+      gateWays.user,
+      gateWays.messageGenerator
+    );
+    res.json({ message });
+  } catch (e: unknown) {
+    const error = e as UseCaseError;
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
 });
 
 export default app;

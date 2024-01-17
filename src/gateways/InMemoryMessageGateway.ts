@@ -33,6 +33,8 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
       if (child) {
         msg = child;
         cnt++;
+      } else {
+        break;
       }
     }
 

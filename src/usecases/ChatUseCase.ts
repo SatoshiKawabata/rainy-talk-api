@@ -48,10 +48,7 @@ export const initializeChat = async (
 // メッセージの投稿
 export const postMessage = async (
   p: PostMessageProps,
-  messageGateway: MessageGatewayPort,
-  messageGeneratorGateway: MessageGeneratorGatewayPort,
-  userGateway: InMemoryUserGateway,
-  chatRoomGateway: ChatRoomGatewayPort
+  messageGateway: MessageGatewayPort
 ): Promise<Message> => {
   // 親メッセージがあれば、親の子メッセージの紐づけを解除する
   if (p.parentMessageId) {
@@ -68,32 +65,6 @@ export const postMessage = async (
   // Gatewayのメッセージの投稿メソッドを呼ぶ
   const newMsg = await messageGateway.postMessage({
     ...p,
-  });
-
-  // 投稿したメッセージがAIの場合、再帰的にメッセージを生成する
-  const users = await userGateway.getUsers({ ids: [p.userId] });
-  if (users.length === 0) {
-    throw new UseCaseError(
-      `user not found: userId=${p.userId}`,
-      ErrorCodes.FailedToPostMessage
-    );
-  }
-  const chatMember = await chatRoomGateway.findChatRoomMember({
-    userId: p.userId,
-  });
-  if (!chatMember) {
-    throw new UseCaseError(
-      `chat member not found: userId=${p.userId}`,
-      ErrorCodes.FailedToPostMessage
-    );
-  }
-  const [user] = users;
-  messageGeneratorGateway.generate({
-    info: {
-      aiMessageContent: newMsg.content,
-      userName: user.name,
-      gptSystem: chatMember.gptSystem ?? user.originalGptSystem,
-    },
   });
 
   // メッセージを返す
@@ -123,10 +94,10 @@ export const requestNextMessage = async (
     const { isChainCount, tailMessageId } =
       await messageGatewayPort.hasChainCountOfChildMessages({
         fromMessageId: childMsg.id,
-        count: 3,
+        count: 5,
       });
     if (!isChainCount) {
-      await generateMessageRecursive(
+      generateMessageRecursive(
         {
           currentMessageId: tailMessageId,
         },
