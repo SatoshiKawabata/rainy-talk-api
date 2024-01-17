@@ -47,6 +47,20 @@ export type GetContinuousMessagesByUserProps = {
   fromMessageId: Message["id"];
 };
 
+export type IsChainCountOfChildMessagesProps = {
+  /** 再起取得を始めるメッセージ */
+  fromMessageId: Message["id"];
+  /** メッセージの数 */
+  count: number;
+};
+
+export type IsChainCountOfChildMessagesResponse = {
+  // 指定した数だけメッセージが存在しているかどうか
+  isChainCount: boolean;
+  // 末尾のメッセージID
+  tailMessageId: Message["id"];
+};
+
 type PollingChildMessageProps = {
   currentMessageId: Message["id"];
 };
@@ -70,4 +84,8 @@ export interface MessageGatewayPort {
   ): Promise<Message[]>;
   /** 対象の子メッセージが生成されるまで待つ */
   pollingChildMessage(p: PollingChildMessageProps): Promise<Message>;
+  /** 子メッセージがcountまで存在するかどうか */
+  hasChainCountOfChildMessages(
+    p: IsChainCountOfChildMessagesProps
+  ): Promise<IsChainCountOfChildMessagesResponse>;
 }

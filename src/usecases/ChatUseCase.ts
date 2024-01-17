@@ -119,6 +119,25 @@ export const requestNextMessage = async (
     parentId: p.messageId,
   });
   if (childMsg) {
+    // 残りのメッセージが3件以下の場合、次のメッセージを生成する再帰処理generateMessageRecursiveを呼ぶ
+    const { isChainCount, tailMessageId } =
+      await messageGatewayPort.hasChainCountOfChildMessages({
+        fromMessageId: childMsg.id,
+        count: 3,
+      });
+    if (!isChainCount) {
+      await generateMessageRecursive(
+        {
+          currentMessageId: tailMessageId,
+        },
+        messageGatewayPort,
+        messageSchedulerPort,
+        chatRoomGatewayPort,
+        userGatewayPort,
+        messageGeneratorGatewayPort
+      );
+    }
+    // 子メッセージが存在している場合は子メッセージを返す
     return childMsg;
   }
 

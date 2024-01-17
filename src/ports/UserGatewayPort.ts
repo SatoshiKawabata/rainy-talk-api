@@ -8,6 +8,7 @@ export type CreateUserProps = {
 
 export type GetUserProps = {
   ids: User["id"][];
+  isAiOnly?: boolean; // AIのみを取得するかどうか
 };
 
 export interface UserGatewayPort {

@@ -149,7 +149,7 @@ describe("GET /next_message", () => {
         isRoot: false,
         parentMessageId: 0,
         roomId: 0,
-        userId: 1,
+        userId: 0,
       },
     });
   });

@@ -5,15 +5,42 @@ import {
   FindMessageProps,
   GetContinuousMessagesByUserProps,
   GetMessagesRecursiveByUserProps,
+  IsChainCountOfChildMessagesProps,
   HasChainToRootProps,
   MessageGatewayPort,
   PostMessageProps,
   RemoteParentMessageProps,
+  IsChainCountOfChildMessagesResponse,
 } from "../ports/MessageGatewayPort";
 
 const messages: Message[] = [];
 
 export class InMemoryMessageGateway implements MessageGatewayPort {
+  async hasChainCountOfChildMessages({
+    fromMessageId,
+    count,
+  }: IsChainCountOfChildMessagesProps): Promise<IsChainCountOfChildMessagesResponse> {
+    const map = new Map(messages.map((msg) => [msg.id, msg]));
+
+    let msg = map.get(fromMessageId);
+    if (!msg) {
+      throw new Error(`No such message id. : ${fromMessageId}`);
+    }
+    let cnt = 0;
+
+    while (cnt < count) {
+      const child = await this.findChildMessage({ parentId: msg.id });
+      if (child) {
+        msg = child;
+        cnt++;
+      }
+    }
+
+    return {
+      isChainCount: cnt >= count,
+      tailMessageId: msg?.id,
+    };
+  }
   async pollingChildMessage(p: { currentMessageId: number }): Promise<Message> {
     let childMsg: Message | undefined;
     let count = 0;
@@ -142,10 +169,10 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
   async hasChainToRoot({ id }: HasChainToRootProps): Promise<boolean> {
     const map = new Map(messages.map((msg) => [msg.id, msg]));
     let msg = map.get(id);
-    while (msg?.parentMessageId) {
+    while (typeof msg?.parentMessageId === "number") {
       msg = map.get(msg.parentMessageId);
     }
-    return Promise.resolve(!!msg?.isRoot);
+    return !!msg?.isRoot;
   }
   getMessagesRecursiveByUser({
     filteringUserId,

@@ -8,11 +8,15 @@ import {
 const users: User[] = [];
 
 export class InMemoryUserGateway implements UserGatewayPort {
-  getUsers(p: GetUserProps): Promise<User[]> {
-    return Promise.resolve(users.filter((user) => p.ids.includes(user.id)));
+  async getUsers(p: GetUserProps): Promise<User[]> {
+    const userList = users.filter((user) => p.ids.includes(user.id));
+    if (p.isAiOnly) {
+      return userList.filter((user) => user.isAi);
+    }
+    return userList;
   }
 
-  createUser(p: CreateUserProps): Promise<User> {
+  async createUser(p: CreateUserProps): Promise<User> {
     const newUser: User = {
       name: p.name,
       originalGptSystem: p.originalGptSystem,
@@ -21,6 +25,6 @@ export class InMemoryUserGateway implements UserGatewayPort {
       password: "temp",
     };
     users.push(newUser);
-    return Promise.resolve(newUser);
+    return newUser;
   }
 }

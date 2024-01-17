@@ -19,13 +19,15 @@ export const generateMessageRecursive = async (
   messageGeneratorGatewayPort: MessageGeneratorGatewayPort
 ): Promise<{ nextMessage: Message }> => {
   // 再帰処理をしているメッセージ(p.messageId)をGatewayに伝える
+  console.log("再帰処理をしているメッセージ(p.messageId)をGatewayに伝える");
   await messageSchedulerPort.setIsRecursiveGenerating({
     currentMessageId,
     isGenerating: true,
   });
 
   // まずは最初のメッセージを生成
-  const nextMessage = await generateNextMsg(
+  console.log("まずは最初のメッセージを生成");
+  const nextFirstMessage = await generateNextMsg(
     currentMessageId,
     messageGatewayPort,
     chatRoomGatewayPort,
@@ -34,13 +36,20 @@ export const generateMessageRecursive = async (
   );
 
   // 10回生成処理を投げる(本関数では最初に生成されたメッセージを返すので、ループは待たない)
+  console.log(
+    "10回生成処理を投げる(本関数では最初に生成されたメッセージを返すので、ループは待たない)"
+  );
   (async () => {
-    let targetMsgId = currentMessageId;
+    let targetMsgId = nextFirstMessage.id;
     let i = 0;
     while (i < 10) {
       // 10回ループ
+      console.log("10回ループ", i, "targetMsgId", targetMsgId);
       try {
         // 再帰処理をしているメッセージ(targetMsgId)をGatewayに伝える
+        console.log(
+          "再帰処理をしているメッセージ(targetMsgId)をGatewayに伝える"
+        );
         await messageSchedulerPort.setIsRecursiveGenerating({
           currentMessageId: targetMsgId,
           isGenerating: true,
@@ -56,18 +65,21 @@ export const generateMessageRecursive = async (
         i++;
       } catch (err) {
         // エラーが発報されるとループ終了
+        console.log("エラーが発報されるとループ終了");
         console.error(err);
         i = Number.MAX_VALUE;
       }
     }
     // ループが終了したら再帰処理を終了する
+    console.log("ループが終了したら再帰処理を終了する");
     messageSchedulerPort.setIsRecursiveGenerating({
       currentMessageId: targetMsgId,
       isGenerating: false,
     });
   })();
   // 最初に生成したメッセージを返す
-  return { nextMessage };
+  console.log("最初に生成したメッセージを返す");
+  return { nextMessage: nextFirstMessage };
 };
 
 /**
@@ -119,15 +131,17 @@ const generateNextMsg = async (
       .join("\n");
   }
 
-  // 現在のメッセージのAIのメッセージを文字数のリミットに達するまで再帰的に取得する
+  // 現在のAIのメッセージを文字数のリミットに達するまで再帰的に取得する
   const roomMembers = await chatRoomGatewayPort.getChatMembers({
     roomId: currentMsg.roomId,
   });
+  // 現在のルームのAIのメンバーを取得
   const aiUserIds = (
-    await userGatewayPort.getUsers({ ids: roomMembers.map((m) => m.userId) })
-  )
-    .filter((user) => user.isAi)
-    .map((u) => u.id);
+    await userGatewayPort.getUsers({
+      ids: roomMembers.map((m) => m.userId),
+      isAiOnly: true,
+    })
+  ).map((u) => u.id);
   const aiMembers = roomMembers.filter((m) => aiUserIds.includes(m.userId));
   const currentAiMember = aiMembers.find((m) => m.userId === currentMsgUser.id);
   if (!currentAiMember) {
@@ -143,24 +157,31 @@ const generateNextMsg = async (
       ErrorCodes.FailedToGenerateNextMessage
     );
   }
-  const currentAiUserMsgs = await messageGatewayPort.getMessagesRecursiveByUser(
-    {
-      fromMessageId: currentMsg.id,
-      filteringUserId: currentMsgUser.id,
-      textLimit: 5000,
-    }
-  );
+  const [nextAiUser] = await userGatewayPort.getUsers({
+    ids: [nextAiMember.userId],
+  });
+  if (!nextAiUser) {
+    throw new UseCaseError(
+      `other user not found: userId=${nextAiMember.userId}`,
+      ErrorCodes.FailedToGenerateNextMessage
+    );
+  }
+  const nextAiUserMsgs = await messageGatewayPort.getMessagesRecursiveByUser({
+    fromMessageId: currentMsg.id,
+    filteringUserId: nextAiUser.id,
+    textLimit: 5000,
+  });
   // ChatGPTに500文字以内で要約を要求
   const summarizedAiMsg = await messageGeneratorGatewayPort.summarize({
-    messages: currentAiUserMsgs,
+    messages: nextAiUserMsgs,
   });
   // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
   const generatedText = await messageGeneratorGatewayPort.generate({
     info: {
-      gptSystem: currentAiMember?.gptSystem
-        ? currentAiMember?.gptSystem
-        : currentMsgUser.originalGptSystem,
-      userName: currentMsgUser.name,
+      gptSystem: nextAiMember?.gptSystem
+        ? nextAiMember?.gptSystem
+        : nextAiUser.originalGptSystem,
+      userName: nextAiUser.name,
       aiMessageContent: summarizedAiMsg,
       humanMessageContent: humanContinuousMsgText,
     },
@@ -193,7 +214,7 @@ const generateNextMsg = async (
   return await messageGatewayPort.postMessage({
     parentMessageId: currentMsgId,
     content: generatedText,
-    userId: currentMsgUser.id,
+    userId: nextAiUser.id,
     roomId: currentMsg.roomId,
   });
 };
