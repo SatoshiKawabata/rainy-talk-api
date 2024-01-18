@@ -24,8 +24,8 @@
     "dev": "npx ts-node-dev ./src/server.ts",
     "start": "npx ts-node ./src/server.ts",
     "test": "jest",
-    "docker:build": "docker build --platform linux/x86_64 -t rainy-talk-api:latest .",
-    "docker:run": "docker run -p 3000:3000 rainy-talk-api:latest",
-    "docker:push": "docker push gcr.io/chat-ata/rainy-talk-api:latest"
+    "docker:build": "docker build --platform linux/x86_64 -t rainy-talk-api .",
+    "docker:run": "docker run -p 3000:3000 rainy-talk-api",
+    "docker:push": "docker push gcr.io/chat-ata/rainy-talk-api"
   }
 }
