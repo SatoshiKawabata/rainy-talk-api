@@ -7,17 +7,17 @@ export type CreateChatRoomProps = {
 };
 
 export type AddChatRoomMembersProps = {
-  roomId: ChatRoom["id"];
-  userIds: User["id"][];
+  roomId: ChatRoom["chatRoomId"];
+  userIds: User["userId"][];
 };
 
 export type UpdateChatRoomMemberGptSystemProps = {
-  chatRoomMemberId: ChatRoomMember["id"];
+  chatRoomMemberId: ChatRoomMember["chatRoomMemberId"];
   gptSystem: ChatRoomMember["gptSystem"];
 };
 
 export type GetChatMembersProps = {
-  roomId: ChatRoom["id"];
+  roomId: ChatRoom["chatRoomId"];
 };
 
 export type FindChatMembersProps = {

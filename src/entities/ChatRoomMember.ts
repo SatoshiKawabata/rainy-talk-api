@@ -2,8 +2,8 @@ import { ChatRoom } from "./ChatRoom";
 import { User } from "./User";
 
 export interface ChatRoomMember {
-  id: number;
-  roomId: ChatRoom["id"];
-  userId: User["id"];
+  chatRoomMemberId: number;
+  roomId: ChatRoom["chatRoomId"];
+  userId: User["userId"];
   gptSystem: string;
 }

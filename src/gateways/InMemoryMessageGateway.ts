@@ -20,7 +20,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     fromMessageId,
     count,
   }: IsChainCountOfChildMessagesProps): Promise<IsChainCountOfChildMessagesResponse> {
-    const map = new Map(messages.map((msg) => [msg.id, msg]));
+    const map = new Map(messages.map((msg) => [msg.messageId, msg]));
 
     let msg = map.get(fromMessageId);
     if (!msg) {
@@ -29,7 +29,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     let cnt = 0;
 
     while (cnt < count) {
-      const child = await this.findChildMessage({ parentId: msg.id });
+      const child = await this.findChildMessage({ parentId: msg.messageId });
       if (child) {
         msg = child;
         cnt++;
@@ -40,7 +40,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
 
     return {
       isChainCount: cnt >= count,
-      tailMessageId: msg?.id,
+      tailMessageId: msg?.messageId,
     };
   }
   async pollingChildMessage(p: { currentMessageId: number }): Promise<Message> {
@@ -97,7 +97,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
       const parentMsg = await this.findMessage({ id: p.parentMessageId });
       if (parentMsg) {
         const childMsg = await this.findChildMessage({
-          parentId: parentMsg.id,
+          parentId: parentMsg.messageId,
         });
         if (childMsg) {
           // 既に親メッセージが子メッセージを持っている
@@ -131,7 +131,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     }
     const newMessage: Message = {
       content: p.content,
-      id: messages.length,
+      messageId: messages.length,
       isRoot: roomMessages.length === 0,
       roomId: p.roomId,
       userId: p.userId,
@@ -142,7 +142,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     return Promise.resolve(newMessage);
   }
   findMessage(p: FindMessageProps): Promise<Message | undefined> {
-    const msg = messages.find((msg) => msg.id === p.id);
+    const msg = messages.find((msg) => msg.messageId === p.id);
     return Promise.resolve(msg);
   }
   findChildMessage({
@@ -152,11 +152,11 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     return Promise.resolve(childMsg);
   }
   deleteMessageRecursive({ id }: DeleteMessageRecursiveProps): Promise<void> {
-    const map = new Map(messages.map((msg) => [msg.id, msg]));
+    const map = new Map(messages.map((msg) => [msg.messageId, msg]));
     let msg = map.get(id);
     while (msg) {
       const parentId = msg.parentMessageId;
-      map.delete(msg.id);
+      map.delete(msg.messageId);
       if (parentId) {
         msg = map.get(parentId);
       } else {
@@ -169,7 +169,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     return Promise.resolve();
   }
   async hasChainToRoot({ id }: HasChainToRootProps): Promise<boolean> {
-    const map = new Map(messages.map((msg) => [msg.id, msg]));
+    const map = new Map(messages.map((msg) => [msg.messageId, msg]));
     let msg = map.get(id);
     while (typeof msg?.parentMessageId === "number") {
       msg = map.get(msg.parentMessageId);
@@ -181,7 +181,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     fromMessageId,
     textLimit,
   }: GetMessagesRecursiveByUserProps): Promise<Message[]> {
-    const map = new Map(messages.map((msg) => [msg.id, msg]));
+    const map = new Map(messages.map((msg) => [msg.messageId, msg]));
     let msg = map.get(fromMessageId);
     let textCount = 0;
     const resultMessages: Message[] = [];

@@ -1,11 +1,11 @@
 import { Message } from "../entities/Message";
 
 export type IsRecursiveGeneratingProps = {
-  currentMessageId: Message["id"];
+  currentMessageId: Message["messageId"];
 };
 
 export type SetIsRecursiveGeneratingProps = {
-  currentMessageId: Message["id"];
+  currentMessageId: Message["messageId"];
   isGenerating: boolean;
 };
 

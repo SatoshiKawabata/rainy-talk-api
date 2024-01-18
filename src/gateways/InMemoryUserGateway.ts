@@ -9,7 +9,7 @@ const users: User[] = [];
 
 export class InMemoryUserGateway implements UserGatewayPort {
   async getUsers(p: GetUserProps): Promise<User[]> {
-    const userList = users.filter((user) => p.ids.includes(user.id));
+    const userList = users.filter((user) => p.ids.includes(user.userId));
     if (p.isAiOnly) {
       return userList.filter((user) => user.isAi);
     }
@@ -20,7 +20,7 @@ export class InMemoryUserGateway implements UserGatewayPort {
     const newUser: User = {
       name: p.name,
       originalGptSystem: p.originalGptSystem,
-      id: users.length,
+      userId: users.length,
       isAi: p.isAI,
       password: "temp",
     };

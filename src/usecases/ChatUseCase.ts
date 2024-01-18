@@ -34,8 +34,8 @@ export const initializeChat = async (
   const room = await chatRoomGateway.createChatRoom({ name: p.chatRoomName });
   // チャットメンバーの追加
   const members = await chatRoomGateway.addChatRoomMembers({
-    roomId: room.id,
-    userIds: users.map((user) => user.id),
+    roomId: room.chatRoomId,
+    userIds: users.map((user) => user.userId),
   });
   return {
     room,
@@ -56,7 +56,7 @@ export const postMessage = async (
 
     if (otherChildMsg) {
       // p.parentMessageIdのメッセージがあれば子メッセージの紐づけを解除
-      await messageGateway.removeParentMessage({ id: otherChildMsg.id });
+      await messageGateway.removeParentMessage({ id: otherChildMsg.messageId });
     }
   }
 
@@ -71,8 +71,8 @@ export const postMessage = async (
 
 // 次のメッセージを取得
 export type RequestNextMessageProps = {
-  messageId: Message["id"];
-  roomId: ChatRoom["id"];
+  messageId: Message["messageId"];
+  roomId: ChatRoom["chatRoomId"];
 };
 
 export const requestNextMessage = async (
@@ -91,7 +91,7 @@ export const requestNextMessage = async (
     // 残りのメッセージが3件以下の場合、次のメッセージを生成する再帰処理generateMessageRecursiveを呼ぶ
     const { isChainCount, tailMessageId } =
       await messageGatewayPort.hasChainCountOfChildMessages({
-        fromMessageId: childMsg.id,
+        fromMessageId: childMsg.messageId,
         count: 5,
       });
     if (!isChainCount) {

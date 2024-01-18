@@ -16,7 +16,7 @@ export class InMemoryChatRoomGateway implements ChatRoomGatewayPort {
     p: UpdateChatRoomMemberGptSystemProps
   ): Promise<ChatRoomMember> {
     const member = chatRoomMembers.find(
-      (member) => member.id === p.chatRoomMemberId
+      (member) => member.chatRoomMemberId === p.chatRoomMemberId
     );
     if (!member) {
       throw new Error(`No such chat room member: ${JSON.stringify(p)}`);
@@ -27,7 +27,7 @@ export class InMemoryChatRoomGateway implements ChatRoomGatewayPort {
 
   addChatRoomMembers(p: AddChatRoomMembersProps): Promise<ChatRoomMember[]> {
     const newMembers: ChatRoomMember[] = p.userIds.map((userId, i) => ({
-      id: chatRoomMembers.length + i,
+      chatRoomMemberId: chatRoomMembers.length + i,
       gptSystem: "",
       roomId: p.roomId,
       userId,
@@ -39,7 +39,7 @@ export class InMemoryChatRoomGateway implements ChatRoomGatewayPort {
   createChatRoom(p: CreateUserProps): Promise<ChatRoom> {
     const newChatRoom: ChatRoom = {
       name: p.name,
-      id: chatRooms.length,
+      chatRoomId: chatRooms.length,
     };
     chatRooms.push(newChatRoom);
     return Promise.resolve(newChatRoom);

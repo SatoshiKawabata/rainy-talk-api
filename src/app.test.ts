@@ -79,19 +79,19 @@ describe("POST /initialize", () => {
       members: [
         {
           gptSystem: "",
-          id: 0,
+          chatRoomMemberId: 0,
           roomId: 0,
           userId: 0,
         },
         {
           gptSystem: "",
-          id: 1,
+          chatRoomMemberId: 1,
           roomId: 0,
           userId: 1,
         },
       ],
       room: {
-        id: 0,
+        chatRoomId: 0,
         name: "Test Room",
       },
     };
@@ -121,7 +121,7 @@ describe("POST /message", () => {
     expect(response.body).toEqual({
       message: {
         content: "first message",
-        id: 0,
+        messageId: 0,
         roomId: 0,
         userId: 1,
         isRoot: true,
@@ -145,7 +145,7 @@ describe("GET /next_message", () => {
     expect(response.body).toEqual({
       message: {
         content: "first message",
-        id: 1,
+        messageId: 1,
         isRoot: false,
         parentMessageId: 0,
         roomId: 0,

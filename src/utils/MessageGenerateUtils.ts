@@ -8,7 +8,7 @@ import { UserGatewayPort } from "../ports/UserGatewayPort";
 
 // 再帰処理を起動
 type GenerateMessageRecursiveProps = {
-  currentMessageId: Message["id"];
+  currentMessageId: Message["messageId"];
 };
 export const generateMessageRecursive = async (
   { currentMessageId }: GenerateMessageRecursiveProps,
@@ -40,7 +40,7 @@ export const generateMessageRecursive = async (
     "10回生成処理を投げる(本関数では最初に生成されたメッセージを返すので、ループは待たない)"
   );
   (async () => {
-    let targetMsgId = nextFirstMessage.id;
+    let targetMsgId = nextFirstMessage.messageId;
     let i = 0;
     while (i < 10) {
       // 10回ループ
@@ -61,7 +61,7 @@ export const generateMessageRecursive = async (
           userGatewayPort,
           messageGeneratorGatewayPort
         );
-        targetMsgId = msg.id;
+        targetMsgId = msg.messageId;
         i++;
       } catch (err) {
         // エラーが発報されるとループ終了
@@ -92,7 +92,7 @@ export const generateMessageRecursive = async (
  * @param messageGeneratorGatewayPort
  */
 const generateNextMsg = async (
-  currentMsgId: Message["id"],
+  currentMsgId: Message["messageId"],
   messageGatewayPort: MessageGatewayPort,
   chatRoomGatewayPort: ChatRoomGatewayPort,
   userGatewayPort: UserGatewayPort,
@@ -141,16 +141,20 @@ const generateNextMsg = async (
       ids: roomMembers.map((m) => m.userId),
       isAiOnly: true,
     })
-  ).map((u) => u.id);
+  ).map((u) => u.userId);
   const aiMembers = roomMembers.filter((m) => aiUserIds.includes(m.userId));
-  const currentAiMember = aiMembers.find((m) => m.userId === currentMsgUser.id);
+  const currentAiMember = aiMembers.find(
+    (m) => m.userId === currentMsgUser.userId
+  );
   if (!currentAiMember) {
     throw new UseCaseError(
-      `member not found: ${currentMsgUser.id}`,
+      `member not found: ${currentMsgUser.userId}`,
       ErrorCodes.FailedToGenerateNextMessage
     );
   }
-  const nextAiMember = aiMembers.find((m) => m.userId !== currentMsgUser.id);
+  const nextAiMember = aiMembers.find(
+    (m) => m.userId !== currentMsgUser.userId
+  );
   if (!nextAiMember) {
     throw new UseCaseError(
       `other member not found: ${JSON.stringify(aiMembers)}`,
@@ -167,8 +171,8 @@ const generateNextMsg = async (
     );
   }
   const nextAiUserMsgs = await messageGatewayPort.getMessagesRecursiveByUser({
-    fromMessageId: currentMsg.id,
-    filteringUserId: nextAiUser.id,
+    fromMessageId: currentMsg.messageId,
+    filteringUserId: nextAiUser.userId,
     textLimit: 5000,
   });
   // ChatGPTに500文字以内で要約を要求
@@ -214,7 +218,7 @@ const generateNextMsg = async (
   return await messageGatewayPort.postMessage({
     parentMessageId: currentMsgId,
     content: generatedText,
-    userId: nextAiUser.id,
+    userId: nextAiUser.userId,
     roomId: currentMsg.roomId,
   });
 };

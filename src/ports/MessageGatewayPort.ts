@@ -30,9 +30,9 @@ export type HasChainToRootProps = {
 
 export type GetMessagesRecursiveByUserProps = {
   /** 再起取得を始めるメッセージ */
-  fromMessageId: Message["id"];
+  fromMessageId: Message["messageId"];
   /** フィルターするユーザーID */
-  filteringUserId: User["id"];
+  filteringUserId: User["userId"];
   /** 文字数のリミット */
   textLimit: number;
 };
@@ -44,12 +44,12 @@ export type RemoteParentMessageProps = {
 
 export type GetContinuousMessagesByUserProps = {
   /** 再起取得を始めるメッセージ */
-  fromMessageId: Message["id"];
+  fromMessageId: Message["messageId"];
 };
 
 export type IsChainCountOfChildMessagesProps = {
   /** 再起取得を始めるメッセージ */
-  fromMessageId: Message["id"];
+  fromMessageId: Message["messageId"];
   /** メッセージの数 */
   count: number;
 };
@@ -58,11 +58,11 @@ export type IsChainCountOfChildMessagesResponse = {
   // 指定した数だけメッセージが存在しているかどうか
   isChainCount: boolean;
   // 末尾のメッセージID
-  tailMessageId: Message["id"];
+  tailMessageId: Message["messageId"];
 };
 
 type PollingChildMessageProps = {
-  currentMessageId: Message["id"];
+  currentMessageId: Message["messageId"];
 };
 
 export interface MessageGatewayPort {

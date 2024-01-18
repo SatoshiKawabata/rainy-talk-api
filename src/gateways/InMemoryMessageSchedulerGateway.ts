@@ -5,7 +5,7 @@ import {
   SetIsRecursiveGeneratingProps,
 } from "../ports/MessageSchedulerPort";
 
-let recursiveGeneratingMessageIds: Message["id"][] = [];
+let recursiveGeneratingMessageIds: Message["messageId"][] = [];
 
 export class InMemorySchedulerGateway implements MessageSchedulerPort {
   isRecursiveGenerating({
