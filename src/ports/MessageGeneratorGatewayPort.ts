@@ -17,9 +17,14 @@ export type GenerateProps = {
   info: MessageInfo;
 };
 
+export type GenerateResponse = {
+  target: string;
+  content: string;
+};
+
 export interface MessageGeneratorGatewayPort {
   // ChatGPTに500文字以内で要約を要求
   summarize(p: SummarizeProps): Promise<string>;
   // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
-  generate(p: GenerateProps): Promise<string>;
+  generate(p: GenerateProps): Promise<GenerateResponse>;
 }

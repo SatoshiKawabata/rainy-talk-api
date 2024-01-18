@@ -82,12 +82,14 @@ describe("POST /initialize", () => {
           chatRoomMemberId: 0,
           roomId: 0,
           userId: 0,
+          name: "AI01",
         },
         {
           gptSystem: "",
           chatRoomMemberId: 1,
           roomId: 0,
           userId: 1,
+          name: "AI02",
         },
       ],
       room: {

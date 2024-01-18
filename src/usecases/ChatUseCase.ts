@@ -1,6 +1,7 @@
 import { ChatRoom } from "../entities/ChatRoom";
 import { ChatRoomMember } from "../entities/ChatRoomMember";
 import { Message } from "../entities/Message";
+import { User } from "../entities/User";
 import { ChatRoomGatewayPort } from "../ports/ChatRoomGatewayPort";
 import {
   MessageGatewayPort,
@@ -18,7 +19,7 @@ export type InitializeChatProps = {
 
 export type InitializeChatResponse = {
   room: ChatRoom;
-  members: ChatRoomMember[];
+  members: (ChatRoomMember & Pick<User, "name">)[];
 };
 
 export const initializeChat = async (
@@ -39,7 +40,10 @@ export const initializeChat = async (
   });
   return {
     room,
-    members,
+    members: members.map((member) => ({
+      ...member,
+      name: users.find((user) => user.userId === member.userId)?.name ?? "",
+    })),
   };
 };
 

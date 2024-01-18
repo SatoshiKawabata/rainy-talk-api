@@ -180,7 +180,7 @@ const generateNextMsg = async (
     messages: nextAiUserMsgs,
   });
   // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
-  const generatedText = await messageGeneratorGatewayPort.generate({
+  const generatedMessage = await messageGeneratorGatewayPort.generate({
     info: {
       gptSystem: nextAiMember?.gptSystem
         ? nextAiMember?.gptSystem
@@ -217,7 +217,7 @@ const generateNextMsg = async (
   // 生成したメッセージを保存する
   return await messageGatewayPort.postMessage({
     parentMessageId: currentMsgId,
-    content: generatedText,
+    content: generatedMessage.content,
     userId: nextAiUser.userId,
     roomId: currentMsg.roomId,
   });

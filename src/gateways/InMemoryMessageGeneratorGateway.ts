@@ -1,11 +1,13 @@
 import { ChatCompletionMessageParam } from "openai/resources";
 import {
   GenerateProps,
+  GenerateResponse,
   MessageGeneratorGatewayPort,
   SummarizeProps,
 } from "../ports/MessageGeneratorGatewayPort";
 import { createChatCompletion } from "../utils/OpenAiUtils";
 import "dotenv/config";
+import { extractJSON } from "../utils/stringUtils";
 
 const OPENAI_API_KEY = process.env["OPENAI_API_KEY"] || "";
 const MAX_TEXT_COUNT_TO_SUMMARIZE = 500;
@@ -31,7 +33,7 @@ ${joinedMessage}`,
     });
   }
 
-  generate({ info }: GenerateProps): Promise<string> {
+  async generate({ info }: GenerateProps): Promise<GenerateResponse> {
     // generateする
     const messages: ChatCompletionMessageParam[] = [
       {
@@ -49,9 +51,18 @@ ${joinedMessage}`,
         role: "user",
       });
     }
-    return createChatCompletion(OPENAI_API_KEY, {
+    const txt = await createChatCompletion(OPENAI_API_KEY, {
       messages,
     });
+
+    try {
+      return extractJSON(txt);
+    } catch (e) {
+      return {
+        target: info.userName,
+        content: txt,
+      };
+    }
   }
 }
 
