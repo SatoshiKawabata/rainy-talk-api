@@ -10,4 +10,6 @@ RUN npm install
 
 COPY . ./
 
+RUN node -v
+
 CMD [ "npm", "start" ]
