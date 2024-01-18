@@ -1,8 +1,6 @@
 import { ChatRoom } from "../entities/ChatRoom";
 import { ChatRoomMember } from "../entities/ChatRoomMember";
 import { Message } from "../entities/Message";
-import { ErrorCodes, UseCaseError } from "../errors/UseCaseError";
-import { InMemoryUserGateway } from "../gateways/InMemoryUserGateway";
 import { ChatRoomGatewayPort } from "../ports/ChatRoomGatewayPort";
 import {
   MessageGatewayPort,

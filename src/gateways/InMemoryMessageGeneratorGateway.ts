@@ -69,7 +69,7 @@ ${userName}さんが
 ・相手の論理の虚を突いてください。
 ・相手の揚げ足を取ってください。
 
-以下のJSONフォーマットでtargetとcontentという変数名を変えずに返答ください。
+必ず以下のJSONフォーマットでtargetとcontentという変数名を変えずに返答ください。
 {
   "target": "${userName}",
   "content": "{あなたの反論}"
