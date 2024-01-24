@@ -9,20 +9,19 @@ import { createChatCompletion } from "../utils/OpenAiUtils";
 import "dotenv/config";
 import { extractJSON } from "../utils/stringUtils";
 
-const OPENAI_API_KEY = process.env["OPENAI_API_KEY"] || "";
 const MAX_TEXT_COUNT_TO_SUMMARIZE = 500;
 
 export class InMemoryMessageGeneratorGateway
   implements MessageGeneratorGatewayPort
 {
-  summarize({ messages }: SummarizeProps): Promise<string> {
+  summarize({ messages, apiKey }: SummarizeProps): Promise<string> {
     const joinedMessage = messages.map((msg) => msg.content).join(`
 `);
     if (joinedMessage.length <= MAX_TEXT_COUNT_TO_SUMMARIZE) {
       return Promise.resolve(joinedMessage);
     }
 
-    return createChatCompletion(OPENAI_API_KEY, {
+    return createChatCompletion(apiKey, {
       messages: [
         {
           content: `次の文章を${MAX_TEXT_COUNT_TO_SUMMARIZE}文字以内で要約してください。:
@@ -33,7 +32,7 @@ ${joinedMessage}`,
     });
   }
 
-  async generate({ info }: GenerateProps): Promise<GenerateResponse> {
+  async generate({ info, apiKey }: GenerateProps): Promise<GenerateResponse> {
     // generateする
     const messages: ChatCompletionMessageParam[] = [
       {
@@ -51,7 +50,7 @@ ${joinedMessage}`,
         role: "user",
       });
     }
-    const txt = await createChatCompletion(OPENAI_API_KEY, {
+    const txt = await createChatCompletion(apiKey, {
       messages,
     });
 

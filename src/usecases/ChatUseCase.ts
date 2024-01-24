@@ -76,11 +76,11 @@ export const postMessage = async (
 // 次のメッセージを取得
 export type RequestNextMessageProps = {
   messageId: Message["messageId"];
-  roomId: ChatRoom["chatRoomId"];
+  apiKey: string;
 };
 
 export const requestNextMessage = async (
-  p: RequestNextMessageProps,
+  { apiKey, messageId }: RequestNextMessageProps,
   messageGatewayPort: MessageGatewayPort,
   messageSchedulerPort: MessageSchedulerPort,
   chatRoomGatewayPort: ChatRoomGatewayPort,
@@ -89,7 +89,7 @@ export const requestNextMessage = async (
 ): Promise<Message> => {
   // 次のメッセージ(messageIdの子メッセージ)がDBにあれば返す
   const childMsg = await messageGatewayPort.findChildMessage({
-    parentId: p.messageId,
+    parentId: messageId,
   });
   if (childMsg) {
     // 残りのメッセージが3件以下の場合、次のメッセージを生成する再帰処理generateMessageRecursiveを呼ぶ
@@ -102,6 +102,7 @@ export const requestNextMessage = async (
       generateMessageRecursive(
         {
           currentMessageId: tailMessageId,
+          apiKey,
         },
         messageGatewayPort,
         messageSchedulerPort,
@@ -115,21 +116,22 @@ export const requestNextMessage = async (
   }
 
   const isGenerating = await messageSchedulerPort.isRecursiveGenerating({
-    currentMessageId: p.messageId,
+    currentMessageId: messageId,
   });
   if (isGenerating) {
     // 次のメッセージがDBにない かつ 再帰処理中の場合、
     // 再帰処理を待つためにMessageGatewayに対してポーリングを行って
     // 生成されたメッセージを返す
     const msg = await messageGatewayPort.pollingChildMessage({
-      currentMessageId: p.messageId,
+      currentMessageId: messageId,
     });
     return msg;
   }
   // 次のメッセージがDBにない場合、次のメッセージを生成する再帰処理generateMessageRecursiveを呼ぶ
   const { nextMessage } = await generateMessageRecursive(
     {
-      currentMessageId: p.messageId,
+      currentMessageId: messageId,
+      apiKey,
     },
     messageGatewayPort,
     messageSchedulerPort,

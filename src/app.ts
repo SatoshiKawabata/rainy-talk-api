@@ -14,6 +14,20 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use((req, res, next) => {
+  const apiKey = req.header("api-key");
+  if (!apiKey) {
+    res.status(401).json({ message: "Unauthorized" });
+    console.error(
+      "Error: no api-key (req:",
+      req.path,
+      JSON.stringify(req.body)
+    );
+    return;
+  }
+  console.log("req:", req.path, JSON.stringify(req.body));
+  next();
+});
 
 app.get("/hello", (req: Request, res: Response) => {
   res.status(200).json({ message: "Hello World" });
@@ -54,9 +68,10 @@ app.post("/message", async (req: Request, res: Response) => {
 
 app.get("/next_message", async (req: Request, res: Response) => {
   console.log("/next_message", req.body);
+  const apiKey = req.header("api-key");
   try {
     const message = await requestNextMessage(
-      req.body,
+      { ...req.body, apiKey },
       gateWays.message,
       gateWays.messageScheduler,
       gateWays.chatRoom,

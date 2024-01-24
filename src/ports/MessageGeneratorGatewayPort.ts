@@ -11,10 +11,12 @@ type MessageInfo = {
 
 export type SummarizeProps = {
   messages: Message[];
+  apiKey: string;
 };
 
 export type GenerateProps = {
   info: MessageInfo;
+  apiKey: string;
 };
 
 export type GenerateResponse = {

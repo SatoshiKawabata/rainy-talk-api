@@ -9,9 +9,10 @@ import { UserGatewayPort } from "../ports/UserGatewayPort";
 // 再帰処理を起動
 type GenerateMessageRecursiveProps = {
   currentMessageId: Message["messageId"];
+  apiKey: string;
 };
 export const generateMessageRecursive = async (
-  { currentMessageId }: GenerateMessageRecursiveProps,
+  { currentMessageId, apiKey }: GenerateMessageRecursiveProps,
   messageGatewayPort: MessageGatewayPort,
   messageSchedulerPort: MessageSchedulerPort,
   chatRoomGatewayPort: ChatRoomGatewayPort,
@@ -29,6 +30,7 @@ export const generateMessageRecursive = async (
   console.log("まずは最初のメッセージを生成");
   const nextFirstMessage = await generateNextMsg(
     currentMessageId,
+    apiKey,
     messageGatewayPort,
     chatRoomGatewayPort,
     userGatewayPort,
@@ -56,6 +58,7 @@ export const generateMessageRecursive = async (
         });
         const msg = await generateNextMsg(
           targetMsgId,
+          apiKey,
           messageGatewayPort,
           chatRoomGatewayPort,
           userGatewayPort,
@@ -93,6 +96,7 @@ export const generateMessageRecursive = async (
  */
 const generateNextMsg = async (
   currentMsgId: Message["messageId"],
+  apiKey: string,
   messageGatewayPort: MessageGatewayPort,
   chatRoomGatewayPort: ChatRoomGatewayPort,
   userGatewayPort: UserGatewayPort,
@@ -178,9 +182,11 @@ const generateNextMsg = async (
   // ChatGPTに500文字以内で要約を要求
   const summarizedAiMsg = await messageGeneratorGatewayPort.summarize({
     messages: nextAiUserMsgs,
+    apiKey,
   });
   // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
   const generatedMessage = await messageGeneratorGatewayPort.generate({
+    apiKey,
     info: {
       gptSystem: nextAiMember?.gptSystem
         ? nextAiMember?.gptSystem
