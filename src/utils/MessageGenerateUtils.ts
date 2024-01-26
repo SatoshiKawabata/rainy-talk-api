@@ -20,7 +20,9 @@ export const generateMessageRecursive = async (
   messageGeneratorGatewayPort: MessageGeneratorGatewayPort
 ): Promise<{ nextMessage: Message }> => {
   // 再帰処理をしているメッセージ(p.messageId)をGatewayに伝える
-  console.log("再帰処理をしているメッセージ(p.messageId)をGatewayに伝える");
+  console.log("再帰処理をしているメッセージ(p.messageId)をGatewayに伝える", {
+    currentMessageId,
+  });
   await messageSchedulerPort.setIsRecursiveGenerating({
     currentMessageId,
     isGenerating: true,
@@ -124,6 +126,7 @@ const generateNextMsg = async (
   }
   // 現在のメッセージの発言者が人の場合、人の発言を再帰的に取得
   let humanContinuousMsgText: string | undefined = undefined;
+  let currentAiUserId: number | undefined = currentMsgUser.userId; // AIの発言を要約するためのID(現在のメッセージの発言者のuserIdをまずは入れておく)
   if (!currentMsgUser.isAi) {
     const humanContinuousMsgs =
       await messageGatewayPort.getContinuousMessagesByUser({
@@ -133,6 +136,17 @@ const generateNextMsg = async (
     humanContinuousMsgText = humanContinuousMsgs
       .map((msg) => msg.content)
       .join("\n");
+
+    if (currentMsg.parentMessageId) {
+      // 人の場合は前回のAIのメッセージの発言者
+      const parentMsg = await messageGatewayPort.findMessage({
+        id: currentMsg.parentMessageId,
+      });
+      currentAiUserId = parentMsg?.userId;
+    } else {
+      // 親メッセージがない場合は適当なAIのメッセージの発言者のIDを指定する
+      currentAiUserId = undefined;
+    }
   }
 
   // 現在のAIのメッセージを文字数のリミットに達するまで再帰的に取得する
@@ -147,18 +161,18 @@ const generateNextMsg = async (
     })
   ).map((u) => u.userId);
   const aiMembers = roomMembers.filter((m) => aiUserIds.includes(m.userId));
-  const currentAiMember = aiMembers.find(
-    (m) => m.userId === currentMsgUser.userId
-  );
+  if (!currentAiUserId) {
+    // AIの発言を要約するためのIDがない場合、適当なAIのメッセージの発言者のIDを指定する
+    currentAiUserId = aiMembers[0]?.userId;
+  }
+  const currentAiMember = aiMembers.find((m) => m.userId === currentAiUserId);
   if (!currentAiMember) {
     throw new UseCaseError(
-      `member not found: ${currentMsgUser.userId}`,
+      `member not found: ${currentAiUserId}`,
       ErrorCodes.FailedToGenerateNextMessage
     );
   }
-  const nextAiMember = aiMembers.find(
-    (m) => m.userId !== currentMsgUser.userId
-  );
+  const nextAiMember = aiMembers.find((m) => m.userId !== currentAiUserId);
   if (!nextAiMember) {
     throw new UseCaseError(
       `other member not found: ${JSON.stringify(aiMembers)}`,

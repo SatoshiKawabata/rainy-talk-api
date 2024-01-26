@@ -14,7 +14,6 @@ import {
 } from "../ports/MessageGatewayPort";
 
 const messages: Message[] = [];
-
 export class InMemoryMessageGateway implements MessageGatewayPort {
   async hasChainCountOfChildMessages({
     fromMessageId,
@@ -64,7 +63,8 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     return childMsg;
   }
   async removeParentMessage({ id }: RemoteParentMessageProps): Promise<void> {
-    const msg = await this.findMessage({ id: id });
+    console.log("親メッセージとのチェーンを削除", { id });
+    const msg = await this.findMessage({ id });
     if (msg) {
       delete msg.parentMessageId;
     }
@@ -129,9 +129,15 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
         )}`
       );
     }
+    const newMessageId =
+      messages.length === 0
+        ? 0
+        : messages.reduce((acc, cur) => {
+            return Math.max(acc, cur.messageId);
+          }, 0) + 1;
     const newMessage: Message = {
       content: p.content,
-      messageId: messages.length,
+      messageId: newMessageId,
       isRoot: roomMessages.length === 0,
       roomId: p.roomId,
       userId: p.userId,
@@ -152,9 +158,12 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     return Promise.resolve(childMsg);
   }
   deleteMessageRecursive({ id }: DeleteMessageRecursiveProps): Promise<void> {
+    console.log("削除スタート", messages);
     const map = new Map(messages.map((msg) => [msg.messageId, msg]));
+    console.log("map", map);
     let msg = map.get(id);
     while (msg) {
+      console.log("msg", msg);
       const parentId = msg.parentMessageId;
       map.delete(msg.messageId);
       if (parentId) {
@@ -163,9 +172,13 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
         msg = undefined;
       }
     }
+    console.log("map", map);
     // messagesを上書き
     const newMessages = Array.from(map).map((val) => val[1]);
-    messages.splice(0).push(...newMessages);
+    console.log("newMessages", newMessages);
+    messages.splice(0);
+    messages.push(...newMessages);
+    console.log("メッセージを削除", { id }, messages);
     return Promise.resolve();
   }
   async hasChainToRoot({ id }: HasChainToRootProps): Promise<boolean> {
