@@ -13,10 +13,12 @@ export const createChatCompletion = async (
     apiKey,
   });
   try {
-    const completion = await openAi.chat.completions.create({
+    const param = {
       model: "gpt-3.5-turbo-1106",
       messages: reqParam.messages,
-    });
+    };
+    console.log("openAi.chat.completions.create", JSON.stringify(param));
+    const completion = await openAi.chat.completions.create(param);
     if (completion.choices[0].message?.content) {
       return completion.choices[0].message?.content;
     }
