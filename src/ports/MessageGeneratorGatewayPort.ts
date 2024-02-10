@@ -11,6 +11,7 @@ type MessageInfo = {
 
 export type SummarizeProps = {
   messages: Message[];
+  gptSystem: string;
   apiKey: string;
 };
 

@@ -14,7 +14,7 @@ const MAX_TEXT_COUNT_TO_SUMMARIZE = 500;
 export class InMemoryMessageGeneratorGateway
   implements MessageGeneratorGatewayPort
 {
-  summarize({ messages, apiKey }: SummarizeProps): Promise<string> {
+  summarize({ messages, apiKey, gptSystem }: SummarizeProps): Promise<string> {
     const joinedMessage = messages.map((msg) => msg.content).join(`
 `);
     if (joinedMessage.length <= MAX_TEXT_COUNT_TO_SUMMARIZE) {
@@ -24,8 +24,11 @@ export class InMemoryMessageGeneratorGateway
     return createChatCompletion(apiKey, {
       messages: [
         {
-          content: `次の文章を${MAX_TEXT_COUNT_TO_SUMMARIZE}文字以内で要約してください。:
-${joinedMessage}`,
+          content: gptSystem,
+          role: "system",
+        },
+        {
+          content: `次の文章は過去のあなたの発言を集めたものです。${MAX_TEXT_COUNT_TO_SUMMARIZE}文字以内で要約してあなたらしい発言をしてください。: ${joinedMessage}`,
           role: "user",
         },
       ],
@@ -63,11 +66,6 @@ ${joinedMessage}`,
   }
 }
 
-// Todo:
-// 人間が言っていること
-// - 自分の意見に近い→同調した上でuserNameさんに対して反論してください
-// - 自分の意見に遠い→反論してください
-// - 関係ない話→それに触れた上で話を戻してください
 /*
 
 人間の後の3発言くらいは人間の発言を加味する
@@ -90,7 +88,7 @@ const createAiPrompt = (
 ${userName}さんが
 「${content}」と言っています。
 人間が「${humanContent}」と言ってます。
-人間があなたの立場に近い場合、人間の意見に同調した上で${userName}さんに対して反論してください。
+人間があなたの立場に近い場合、人間の意見に同調してください。
 人間があなたの立場から遠い場合、人間に反論してください。
 関係ない話題の場合、その内容に言及した上で反論してください。
 その際に以下のルールを守ってください。

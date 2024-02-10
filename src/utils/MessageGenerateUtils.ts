@@ -139,7 +139,7 @@ const generateNextMsg = async (
       .join("\n");
 
     if (currentMsg.parentMessageId) {
-      // 人の場合は前回のAIのメッセージの発言者
+      // 人の場合は前回のAIのメッセージの発言者のIDを指定する
       const parentMsg = await messageGatewayPort.findMessage({
         id: currentMsg.parentMessageId,
       });
@@ -167,6 +167,7 @@ const generateNextMsg = async (
     currentAiUserId = aiMembers[0]?.userId;
   }
   const currentAiMember = aiMembers.find((m) => m.userId === currentAiUserId);
+  console.log("currentAiMember", currentAiMember);
   if (!currentAiMember) {
     throw new UseCaseError(
       `member not found: ${currentAiUserId}`,
@@ -174,9 +175,19 @@ const generateNextMsg = async (
     );
   }
   const nextAiMember = aiMembers.find((m) => m.userId !== currentAiUserId);
+  console.log("nextAiMember", nextAiMember);
   if (!nextAiMember) {
     throw new UseCaseError(
       `other member not found: ${JSON.stringify(aiMembers)}`,
+      ErrorCodes.FailedToGenerateNextMessage
+    );
+  }
+  const [currentAiUser] = await userGatewayPort.getUsers({
+    ids: [currentAiUserId],
+  });
+  if (!currentAiUser) {
+    throw new UseCaseError(
+      `other user not found: userId=${currentAiUserId}`,
       ErrorCodes.FailedToGenerateNextMessage
     );
   }
@@ -189,24 +200,33 @@ const generateNextMsg = async (
       ErrorCodes.FailedToGenerateNextMessage
     );
   }
-  const nextAiUserMsgs = await messageGatewayPort.getMessagesRecursiveByUser({
-    fromMessageId: currentMsg.messageId,
-    filteringUserId: nextAiUser.userId,
-    textLimit: 5000,
-  });
+  // 現在のAIのメッセージを要約すために取得
+  const currentAiUserMsgs = await messageGatewayPort.getMessagesRecursiveByUser(
+    {
+      fromMessageId: currentMsg.messageId,
+      filteringUserId: currentAiUserId,
+      textLimit: 5000,
+    }
+  );
   // ChatGPTに500文字以内で要約を要求
   const summarizedAiMsg = await messageGeneratorGatewayPort.summarize({
-    messages: nextAiUserMsgs,
+    messages: currentAiUserMsgs,
+    // 現在のメッセージの発言者のSystemを指定
+    gptSystem: currentAiMember?.gptSystem
+      ? currentAiMember?.gptSystem
+      : currentAiUser.originalGptSystem,
     apiKey,
   });
   // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
   const generatedMessage = await messageGeneratorGatewayPort.generate({
     apiKey,
     info: {
+      // 次のメッセージの発言者のSystemを指定
       gptSystem: nextAiMember?.gptSystem
         ? nextAiMember?.gptSystem
         : nextAiUser.originalGptSystem,
-      userName: nextAiUser.name,
+      // 現在のメッセージの発言者の名前をpromptに入れるために指定
+      userName: currentAiUser.name,
       aiMessageContent: summarizedAiMsg,
       humanMessageContent: humanContinuousMsgText,
     },
