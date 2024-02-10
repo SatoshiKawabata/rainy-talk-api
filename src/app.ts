@@ -39,7 +39,7 @@ app.post("/data", (req, res) => {
 });
 
 app.post("/initialize", async (req: Request, res: Response) => {
-  console.log("/initialize", req.body);
+  console.log("/initialize", JSON.stringify(req.body));
   try {
     const data = await initializeChat(
       req.body,
@@ -55,7 +55,7 @@ app.post("/initialize", async (req: Request, res: Response) => {
 });
 
 app.post("/message", async (req: Request, res: Response) => {
-  console.log("/message", req.body);
+  console.log("/message", JSON.stringify(req.body));
   try {
     const message = await postMessage(req.body, gateWays.message);
     res.json({ message });
@@ -67,7 +67,7 @@ app.post("/message", async (req: Request, res: Response) => {
 });
 
 app.get("/next_message", async (req: Request, res: Response) => {
-  console.log("/next_message", req.body);
+  console.log("/next_message", JSON.stringify(req.body));
   const apiKey = req.header("api-key");
   try {
     const message = await requestNextMessage(
@@ -84,6 +84,38 @@ app.get("/next_message", async (req: Request, res: Response) => {
     console.error(error);
     res.status(500).json({ message: error.message });
   }
+});
+
+app.get("/dump/users", async (req: Request, res: Response) => {
+  const users = await gateWays.user.getAllUsers();
+  console.log("/dump/users", JSON.stringify(users));
+  res.json({ users });
+});
+
+app.get("/dump/chat_rooms", async (req: Request, res: Response) => {
+  const chatRooms = await gateWays.chatRoom.getAllChatRooms();
+  console.log("/dump/chat_rooms", JSON.stringify(chatRooms));
+  res.json({ chatRooms });
+});
+
+app.get(
+  "/dump/chat_room_members/:roomId",
+  async (req: Request, res: Response) => {
+    const roomId = Number(req.params.roomId);
+    const chatRoomMembers = await gateWays.chatRoom.getChatMembers({
+      roomId,
+    });
+    console.log("/dump/chat_room_members", JSON.stringify(chatRoomMembers));
+    res.json({ chatRoomMembers });
+  }
+);
+
+app.get("/dump/messages/:roomId", async (req: Request, res: Response) => {
+  const messages = await gateWays.message.getMessagesByRoomId({
+    roomId: Number(req.params.roomId),
+  });
+  console.log("/dump/messages", JSON.stringify(messages));
+  res.json({ messages });
 });
 
 export default app;

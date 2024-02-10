@@ -125,6 +125,7 @@ const generateNextMsg = async (
     );
   }
   // 現在のメッセージの発言者が人の場合、人の発言を再帰的に取得
+  // Todo: 現在のメッセージから3つ遡ったときに、人の発言があればそれを取得する
   let humanContinuousMsgText: string | undefined = undefined;
   let currentAiUserId: number | undefined = currentMsgUser.userId; // AIの発言を要約するためのID(現在のメッセージの発言者のuserIdをまずは入れておく)
   if (!currentMsgUser.isAi) {

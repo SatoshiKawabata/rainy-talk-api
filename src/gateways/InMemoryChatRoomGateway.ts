@@ -12,6 +12,9 @@ const chatRooms: ChatRoom[] = [];
 const chatRoomMembers: ChatRoomMember[] = [];
 
 export class InMemoryChatRoomGateway implements ChatRoomGatewayPort {
+  async getAllChatRooms(): Promise<ChatRoom[]> {
+    return chatRooms;
+  }
   updateChatRoomMemberGptSystem(
     p: UpdateChatRoomMemberGptSystemProps
   ): Promise<ChatRoomMember> {
@@ -44,11 +47,14 @@ export class InMemoryChatRoomGateway implements ChatRoomGatewayPort {
     chatRooms.push(newChatRoom);
     return Promise.resolve(newChatRoom);
   }
-  getChatMembers(p: GetChatMembersProps): Promise<ChatRoomMember[]> {
-    const targetRoomMembers = chatRoomMembers.filter(
-      (member) => member.roomId === p.roomId
-    );
-    return Promise.resolve(targetRoomMembers);
+  async getChatMembers(p: GetChatMembersProps): Promise<ChatRoomMember[]> {
+    if (p.roomId) {
+      const targetRoomMembers = chatRoomMembers.filter(
+        (member) => member.roomId === p.roomId
+      );
+      return targetRoomMembers;
+    }
+    return chatRoomMembers;
   }
   async findChatRoomMember(p: {
     userId: number;

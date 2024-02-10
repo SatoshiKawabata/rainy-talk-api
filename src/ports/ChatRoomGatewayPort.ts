@@ -17,7 +17,7 @@ export type UpdateChatRoomMemberGptSystemProps = {
 };
 
 export type GetChatMembersProps = {
-  roomId: ChatRoom["chatRoomId"];
+  roomId?: ChatRoom["chatRoomId"];
 };
 
 export type FindChatMembersProps = {
@@ -34,4 +34,5 @@ export interface ChatRoomGatewayPort {
   findChatRoomMember(
     P: FindChatMembersProps
   ): Promise<ChatRoomMember | undefined>;
+  getAllChatRooms(): Promise<ChatRoom[]>;
 }

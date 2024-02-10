@@ -11,10 +11,14 @@ import {
   PostMessageProps,
   RemoteParentMessageProps,
   IsChainCountOfChildMessagesResponse,
+  GetMessagesByRoomIdProps,
 } from "../ports/MessageGatewayPort";
 
 const messages: Message[] = [];
 export class InMemoryMessageGateway implements MessageGatewayPort {
+  async getMessagesByRoomId(p: GetMessagesByRoomIdProps): Promise<Message[]> {
+    return messages.filter((msg) => msg.roomId === p.roomId);
+  }
   async hasChainCountOfChildMessages({
     fromMessageId,
     count,

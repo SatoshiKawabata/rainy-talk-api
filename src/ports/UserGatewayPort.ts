@@ -14,4 +14,5 @@ export type GetUserProps = {
 export interface UserGatewayPort {
   createUser(p: CreateUserProps): Promise<User>;
   getUsers(p: GetUserProps): Promise<User[]>;
+  getAllUsers(): Promise<User[]>;
 }

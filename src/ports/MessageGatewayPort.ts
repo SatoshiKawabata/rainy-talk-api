@@ -65,6 +65,10 @@ type PollingChildMessageProps = {
   currentMessageId: Message["messageId"];
 };
 
+export type GetMessagesByRoomIdProps = {
+  roomId: ChatRoom["chatRoomId"];
+};
+
 export interface MessageGatewayPort {
   postMessage(p: PostMessageProps): Promise<Message>;
   findMessage(p: FindMessageProps): Promise<Message | undefined>;
@@ -88,4 +92,5 @@ export interface MessageGatewayPort {
   hasChainCountOfChildMessages(
     p: IsChainCountOfChildMessagesProps
   ): Promise<IsChainCountOfChildMessagesResponse>;
+  getMessagesByRoomId(p: GetMessagesByRoomIdProps): Promise<Message[]>;
 }

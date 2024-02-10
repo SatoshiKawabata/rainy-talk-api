@@ -8,6 +8,9 @@ import {
 const users: User[] = [];
 
 export class InMemoryUserGateway implements UserGatewayPort {
+  async getAllUsers(): Promise<User[]> {
+    return users;
+  }
   async getUsers(p: GetUserProps): Promise<User[]> {
     const userList = users.filter((user) => p.ids.includes(user.userId));
     if (p.isAiOnly) {
