@@ -22,7 +22,7 @@ export class InMemoryUserGateway implements UserGatewayPort {
   async createUser(p: CreateUserProps): Promise<User> {
     const newUser: User = {
       name: p.name,
-      originalGptSystem: p.originalGptSystem,
+      originalGptSystem: `あなたの名前は${p.name}です。${p.originalGptSystem}`,
       userId: users.length,
       isAi: p.isAI,
       password: "temp",

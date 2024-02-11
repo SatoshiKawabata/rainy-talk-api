@@ -124,30 +124,69 @@ const generateNextMsg = async (
       ErrorCodes.FailedToGenerateNextMessage
     );
   }
-  // 現在のメッセージの発言者が人の場合、人の発言を再帰的に取得
-  // Todo: 現在のメッセージから3つ遡ったときに、人の発言があればそれを取得する
+  // 現在のメッセージから3つ遡ったときに、人の発言があればそれを取得して加味する
   let humanContinuousMsgText: string | undefined = undefined;
-  let currentAiUserId: number | undefined = currentMsgUser.userId; // AIの発言を要約するためのID(現在のメッセージの発言者のuserIdをまずは入れておく)
-  if (!currentMsgUser.isAi) {
+  // 現在のメッセージのルームのメンバーを取得
+  const currentChatRoomUserIds = (
+    await chatRoomGatewayPort.getChatMembers({ roomId: currentMsg.roomId })
+  ).map((m) => m.userId);
+  // 現在のメッセージのルームの人間のユーザーを取得
+  const humanUsers = (
+    await userGatewayPort.getUsers({ ids: currentChatRoomUserIds })
+  ).filter((u) => !u.isAi);
+  // 直近の3件のメッセージを取得
+  const last3Messages = await messageGatewayPort.getMessagesRecursive({
+    fromMessageId: currentMsgId,
+    recursiveCount: 3,
+  });
+  // 直近の3件のメッセージから人の発言を取得
+  const humanMsg = last3Messages.find((msg) => {
+    if (humanUsers.map((h) => h.userId).includes(msg.userId)) {
+      return true;
+    }
+    return false;
+  });
+  console.log("humanMsg", humanMsg);
+  // 現在のメッセージから3つ遡ったときに、人の発言があればそれを取得して加味する
+  if (humanMsg) {
     const humanContinuousMsgs =
       await messageGatewayPort.getContinuousMessagesByUser({
-        fromMessageId: currentMsgId,
+        fromMessageId: humanMsg.messageId,
       });
     // 人の発言を連結する
     humanContinuousMsgText = humanContinuousMsgs
       .map((msg) => msg.content)
       .join("\n");
+  }
 
-    if (currentMsg.parentMessageId) {
-      // 人の場合は前回のAIのメッセージの発言者のIDを指定する
-      const parentMsg = await messageGatewayPort.findMessage({
-        id: currentMsg.parentMessageId,
-      });
-      currentAiUserId = parentMsg?.userId;
-    } else {
-      // 親メッセージがない場合は適当なAIのメッセージの発言者のIDを指定する
-      currentAiUserId = undefined;
+  // 直近のAIの発言者のIDを取得する
+  let currentAiUserId: number | undefined; // AIの発言を要約するためのID(undefinedの場合は適当なAIのメッセージの発言者のIDを後続の処理で指定する)
+  // メッセージを遡って言ってAIがいればそのIDを取得する
+  let msg: Message = currentMsg;
+  while (!currentAiUserId) {
+    // 親メッセージの発言者を取得
+    const [msgUser] = await userGatewayPort.getUsers({
+      ids: [msg.userId],
+    });
+    if (!msgUser) {
+      break;
     }
+    // 親メッセージの発言者がAIの場合はそのIDを取得
+    if (msgUser.isAi) {
+      currentAiUserId = msgUser.userId;
+      break;
+    }
+    // 現在のメッセージの親メッセージを取得
+    if (!msg.parentMessageId) {
+      break;
+    }
+    const parentMsg = await messageGatewayPort.findMessage({
+      id: msg.parentMessageId,
+    });
+    if (!parentMsg) {
+      break;
+    }
+    msg = parentMsg;
   }
 
   // 現在のAIのメッセージを文字数のリミットに達するまで再帰的に取得する

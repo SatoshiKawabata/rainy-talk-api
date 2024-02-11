@@ -34,5 +34,6 @@ export interface ChatRoomGatewayPort {
   findChatRoomMember(
     P: FindChatMembersProps
   ): Promise<ChatRoomMember | undefined>;
+  // dump用
   getAllChatRooms(): Promise<ChatRoom[]>;
 }

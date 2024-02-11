@@ -71,6 +71,13 @@ export type GetMessagesByRoomIdProps = {
   roomId: ChatRoom["chatRoomId"];
 };
 
+export type GetMessagesRecursiveByHumanProps = {
+  /** 再起取得を始めるメッセージ */
+  fromMessageId: Message["messageId"];
+  // 遡る回数
+  recursiveCount: number;
+};
+
 export interface MessageGatewayPort {
   postMessage(p: PostMessageProps): Promise<Message>;
   findMessage(p: FindMessageProps): Promise<Message | undefined>;
@@ -95,4 +102,6 @@ export interface MessageGatewayPort {
     p: IsChainCountOfChildMessagesProps
   ): Promise<IsChainCountOfChildMessagesResponse>;
   getMessagesByRoomId(p: GetMessagesByRoomIdProps): Promise<Message[]>;
+  /** 再帰的にメッセージを取得する */
+  getMessagesRecursive(p: GetMessagesRecursiveByHumanProps): Promise<Message[]>;
 }

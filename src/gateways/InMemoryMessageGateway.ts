@@ -12,10 +12,40 @@ import {
   RemoteParentMessageProps,
   IsChainCountOfChildMessagesResponse,
   GetMessagesByRoomIdProps,
+  GetMessagesRecursiveByHumanProps,
 } from "../ports/MessageGatewayPort";
 
 const messages: Message[] = [];
 export class InMemoryMessageGateway implements MessageGatewayPort {
+  async getMessagesRecursive({
+    recursiveCount,
+    fromMessageId,
+  }: GetMessagesRecursiveByHumanProps): Promise<Message[]> {
+    const map = new Map(messages.map((msg) => [msg.messageId, msg]));
+
+    let msg = map.get(fromMessageId);
+    if (!msg) {
+      throw new Error(`No such message id. : ${fromMessageId}`);
+    }
+    let cnt = 0;
+    const results = [msg];
+
+    while (cnt < recursiveCount) {
+      if (!msg?.parentMessageId) {
+        break;
+      }
+      const parent = map.get(msg.parentMessageId);
+      if (parent) {
+        results.push(parent);
+        msg = parent;
+      } else {
+        break;
+      }
+      cnt++;
+    }
+
+    return results;
+  }
   async getMessagesByRoomId(p: GetMessagesByRoomIdProps): Promise<Message[]> {
     return messages.filter((msg) => msg.roomId === p.roomId);
   }
