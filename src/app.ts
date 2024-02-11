@@ -25,7 +25,7 @@ app.use((req, res, next) => {
     );
     return;
   }
-  console.log("req:", req.path, JSON.stringify(req.body));
+  console.log("req:", req.url, JSON.stringify(req.body));
   next();
 });
 
