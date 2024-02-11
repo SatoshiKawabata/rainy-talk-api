@@ -30,6 +30,7 @@ app.use((req, res, next) => {
 });
 
 app.get("/hello", (req: Request, res: Response) => {
+  console.log(req.query);
   res.status(200).json({ message: "Hello World" });
 });
 
@@ -67,11 +68,12 @@ app.post("/message", async (req: Request, res: Response) => {
 });
 
 app.get("/next_message", async (req: Request, res: Response) => {
-  console.log("/next_message", JSON.stringify(req.body));
-  const apiKey = req.header("api-key");
+  console.log("/next_message", req.query);
+  const messageId = Number(req.query.messageId);
+  const apiKey = req.header("api-key")!;
   try {
     const message = await requestNextMessage(
-      { ...req.body, apiKey },
+      { messageId, apiKey },
       gateWays.message,
       gateWays.messageScheduler,
       gateWays.chatRoom,
