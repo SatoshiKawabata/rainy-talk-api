@@ -69,7 +69,7 @@ app.post("/message", async (req: Request, res: Response) => {
 
 app.get("/next_message", async (req: Request, res: Response) => {
   console.log("/next_message", req.query);
-  const messageId = req.query.messageId as unknown as number;
+  const messageId = Number(req.query.messageId);
   const apiKey = req.header("api-key")!;
   try {
     const message = await requestNextMessage(
