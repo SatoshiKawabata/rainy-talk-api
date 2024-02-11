@@ -200,7 +200,7 @@ const generateNextMsg = async (
       ErrorCodes.FailedToGenerateNextMessage
     );
   }
-  // 現在のAIのメッセージを要約すために取得
+  // 現在のAIのメッセージを要約するために取得
   const currentAiUserMsgs = await messageGatewayPort.getMessagesRecursiveByUser(
     {
       fromMessageId: currentMsg.messageId,
@@ -208,15 +208,22 @@ const generateNextMsg = async (
       textLimit: 5000,
     }
   );
+  // 最近の2件のメッセージは要約に含めない
+  const currentAiUserMsgsWithoutLastTwo = [...currentAiUserMsgs];
+  const lastTwoMsgs = currentAiUserMsgsWithoutLastTwo.slice(-2);
   // ChatGPTに500文字以内で要約を要求
   const summarizedAiMsg = await messageGeneratorGatewayPort.summarize({
-    messages: currentAiUserMsgs,
+    messages: currentAiUserMsgsWithoutLastTwo,
     // 現在のメッセージの発言者のSystemを指定
     gptSystem: currentAiMember?.gptSystem
       ? currentAiMember?.gptSystem
       : currentAiUser.originalGptSystem,
     apiKey,
   });
+  // 要約の末尾に最近の2件のメッセージを追加
+  const summarizedAiMsgWithLastTwo = `${summarizedAiMsg}\n${lastTwoMsgs
+    .map((msg) => msg.content)
+    .join("\n")}`;
   // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
   const generatedMessage = await messageGeneratorGatewayPort.generate({
     apiKey,
@@ -227,7 +234,7 @@ const generateNextMsg = async (
         : nextAiUser.originalGptSystem,
       // 現在のメッセージの発言者の名前をpromptに入れるために指定
       userName: currentAiUser.name,
-      aiMessageContent: summarizedAiMsg,
+      aiMessageContent: summarizedAiMsgWithLastTwo,
       humanMessageContent: humanContinuousMsgText,
     },
   });
