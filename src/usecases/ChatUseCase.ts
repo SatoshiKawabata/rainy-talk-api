@@ -92,13 +92,18 @@ export const requestNextMessage = async (
     parentId: messageId,
   });
   if (childMsg) {
-    // 残りのメッセージが3件以下の場合、次のメッセージを生成する再帰処理generateMessageRecursiveを呼ぶ
+    // 残りのメッセージが5件以下の場合、次のメッセージを生成する再帰処理generateMessageRecursiveを呼ぶ
     const { isChainCount, tailMessageId } =
       await messageGatewayPort.hasChainCountOfChildMessages({
         fromMessageId: childMsg.messageId,
         count: 5,
       });
-    if (!isChainCount) {
+    // childMsgの末尾の子のメッセージが再起処理中の場合は再帰処理は行わない
+    const isTailMessageRecursiveGenerating =
+      await messageSchedulerPort.isRecursiveGenerating({
+        currentMessageId: tailMessageId,
+      });
+    if (!isTailMessageRecursiveGenerating && !isChainCount) {
       generateMessageRecursive(
         {
           currentMessageId: tailMessageId,

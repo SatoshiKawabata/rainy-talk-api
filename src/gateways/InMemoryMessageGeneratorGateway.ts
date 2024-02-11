@@ -105,7 +105,6 @@ ${userName}さんが
   "target": "人間",
   "content": "{あなたの反論}"
 }
-    
 `
     : `
 ${userName}さんが
@@ -125,6 +124,5 @@ ${userName}さんが
   "target": "${userName}",
   "content": "{あなたの反論}"
 }
-
 `;
 };
