@@ -111,6 +111,16 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
             )}`
           );
         }
+        if (p.parentMessagePosition) {
+          // 親メッセージをp.parentMessagePositionの割合で切り取る
+          const parentMsgContent = parentMsg.content;
+          const parentMsgLength = parentMsgContent.length;
+          const cutPosition = Math.ceil(
+            parentMsgLength * p.parentMessagePosition
+          );
+          const newContent = parentMsgContent.slice(0, cutPosition);
+          parentMsg.content = newContent;
+        }
       } else {
         // 親メッセージが存在しない
         throw new Error(

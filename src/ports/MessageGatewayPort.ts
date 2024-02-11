@@ -3,10 +3,12 @@ import { Message } from "../entities/Message";
 import { User } from "../entities/User";
 
 export type PostMessageProps = {
-  parentMessageId?: Message["parentMessageId"];
   content: Message["content"];
   userId: Message["userId"];
   roomId: Message["roomId"];
+  // 以下、rootのときは無し
+  parentMessageId?: Message["parentMessageId"];
+  parentMessagePosition?: number; // 0.0~1.0 親メッセージのどこまで発言されたか
 };
 
 export type FindMessageProps = {

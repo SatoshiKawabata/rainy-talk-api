@@ -7,5 +7,6 @@ export interface Message {
   userId: User["userId"];
   content: string;
   isRoot: boolean;
-  parentMessageId?: Message["messageId"]; // rootのときは無し
+  // 以下、rootのときは無し
+  parentMessageId?: Message["messageId"];
 }
