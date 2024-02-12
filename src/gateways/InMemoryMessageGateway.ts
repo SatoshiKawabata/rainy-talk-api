@@ -16,6 +16,7 @@ import {
 } from "../ports/MessageGatewayPort";
 
 const messages: Message[] = [];
+let newMessageId = 0;
 export class InMemoryMessageGateway implements MessageGatewayPort {
   async getMessagesRecursive({
     recursiveCount,
@@ -173,12 +174,6 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
         )}`
       );
     }
-    const newMessageId =
-      messages.length === 0
-        ? 0
-        : messages.reduce((acc, cur) => {
-            return Math.max(acc, cur.messageId);
-          }, 0) + 1;
     const newMessage: Message = {
       content: p.content,
       messageId: newMessageId,
@@ -189,6 +184,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     };
     messages.push(newMessage);
     console.log("push messages", messages);
+    newMessageId++;
     return Promise.resolve(newMessage);
   }
   findMessage(p: FindMessageProps): Promise<Message | undefined> {
@@ -201,7 +197,9 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     const childMsg = messages.find((msg) => msg.parentMessageId === parentId);
     return Promise.resolve(childMsg);
   }
-  deleteMessageRecursive({ id }: DeleteMessageRecursiveProps): Promise<void> {
+  async deleteMessageRecursive({
+    id,
+  }: DeleteMessageRecursiveProps): Promise<void> {
     console.log("削除スタート", messages);
     const map = new Map(messages.map((msg) => [msg.messageId, msg]));
     console.log("map", map);
