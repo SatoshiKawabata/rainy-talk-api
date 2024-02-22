@@ -2,6 +2,7 @@ import { ChatCompletionMessageParam } from "openai/resources";
 import {
   GenerateProps,
   GenerateResponse,
+  GenerateWithHumanProps,
   MessageGeneratorGatewayPort,
   SummarizeProps,
 } from "../ports/MessageGeneratorGatewayPort";
@@ -43,11 +44,7 @@ export class InMemoryMessageGeneratorGateway
         role: "system",
       },
       {
-        content: createAiPrompt(
-          info.userName,
-          info.aiMessageContent,
-          info.humanMessageContent
-        ),
+        content: createAiPrompt(info.userName, info.aiMessageContent),
         role: "user",
       },
     ];
@@ -64,23 +61,52 @@ export class InMemoryMessageGeneratorGateway
       };
     }
   }
+  async generateWithHuman({
+    info,
+    apiKey,
+  }: GenerateWithHumanProps): Promise<GenerateResponse> {
+    // generateする
+    const messages: ChatCompletionMessageParam[] = [
+      {
+        content: info.gptSystem,
+        role: "system",
+      },
+      {
+        content: createAiPromptWithHuman(
+          info.messages,
+          info.targetUserName,
+          info.selfUserName
+        ),
+        role: "user",
+      },
+    ];
+    const txt = await createChatCompletion(apiKey, {
+      messages,
+    });
+
+    try {
+      return extractJSON(txt);
+    } catch (e) {
+      return {
+        target: info.targetUserName,
+        content: txt,
+      };
+    }
+  }
 }
 
-const createAiPrompt = (
-  userName: string,
-  content: string,
-  humanContent?: string
+const createAiPromptWithHuman = (
+  messages: GenerateWithHumanProps["info"]["messages"],
+  targetUserName: string,
+  selfUserName: string
 ) => {
-  return humanContent
-    ? `
-あなたは${userName}さんと人間と会話をしています。
-${userName}さん「${content}」
-人間「${humanContent}」
-この後にあなたが返答します。
+  return `あなたは${selfUserName}です。あなたは${targetUserName}さんと人間と会話をしています。
+${messages.map((msg) => `${msg.userName}の発言「${msg.content}」`).join("\n")}
+この後にあなたが人間に返答します。
 
 以下の5パターンのうち合致する条件で返答してください。
 ・もし人間があなたの立場に近い場合、人間の意見に同調してください。
-・もし人間があなたの立場から遠い場合、人間に反論してください。
+・もし人間が${targetUserName}さんの立場に近い場合、人間に反論してください。
 ・もし人間の発言が関係ない話題の場合、その内容に言及した上で反論してください。
 ・もし人間の発言が不適切な場合、その旨を伝えた上で反論してください。
 ・もし人間の発言があなたへの質問である場合、その質問に答えてください。
@@ -94,9 +120,11 @@ ${userName}さん「${content}」
 {
   "target": "人間",
   "content": "{あなたの反論}"
-}
-`
-    : `
+}`;
+};
+
+const createAiPrompt = (userName: string, content: string) => {
+  return `
 あなたは${userName}さんと会話をしています。
 ${userName}さん「${content}」
 この後にあなたが反論します。

@@ -2,7 +2,10 @@ import { Message } from "../entities/Message";
 import { ErrorCodes, UseCaseError } from "../errors/UseCaseError";
 import { ChatRoomGatewayPort } from "../ports/ChatRoomGatewayPort";
 import { MessageGatewayPort } from "../ports/MessageGatewayPort";
-import { MessageGeneratorGatewayPort } from "../ports/MessageGeneratorGatewayPort";
+import {
+  GenerateResponse,
+  MessageGeneratorGatewayPort,
+} from "../ports/MessageGeneratorGatewayPort";
 import { MessageSchedulerPort } from "../ports/MessageSchedulerPort";
 import { UserGatewayPort } from "../ports/UserGatewayPort";
 
@@ -248,7 +251,7 @@ const generateNextMsg = async (
     }
   );
   // 最近の2件のメッセージは要約に含めない
-  const currentAiUserMsgsWithoutLastTwo = [...currentAiUserMsgs];
+  const currentAiUserMsgsWithoutLastTwo = currentAiUserMsgs.reverse();
   const lastTwoMsgs = currentAiUserMsgsWithoutLastTwo.slice(-2);
   // ChatGPTに500文字以内で要約を要求
   const summarizedAiMsg = await messageGeneratorGatewayPort.summarize({
@@ -259,24 +262,61 @@ const generateNextMsg = async (
       : currentAiUser.originalGptSystem,
     apiKey,
   });
-  // 要約の末尾に最近の2件のメッセージを追加
-  const summarizedAiMsgWithLastTwo = `${summarizedAiMsg}\n${lastTwoMsgs
-    .map((msg) => msg.content)
-    .join("\n")}`;
-  // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
-  const generatedMessage = await messageGeneratorGatewayPort.generate({
-    apiKey,
-    info: {
-      // 次のメッセージの発言者のSystemを指定
-      gptSystem: nextAiMember?.gptSystem
-        ? nextAiMember?.gptSystem
-        : nextAiUser.originalGptSystem,
-      // 現在のメッセージの発言者の名前をpromptに入れるために指定
-      userName: currentAiUser.name,
-      aiMessageContent: summarizedAiMsgWithLastTwo,
-      humanMessageContent: humanContinuousMsgText,
-    },
-  });
+
+  let generatedMessage: GenerateResponse;
+
+  if (humanContinuousMsgText) {
+    // 人の発言を含む場合
+
+    // 3件のメッセージと要約を含めて、AIの次のメッセージの生成を要求
+    const latestUsers = await userGatewayPort.getUsers({
+      ids: last3Messages.map((msg) => msg.userId),
+    });
+    console.log(
+      "ああああああああああああああああああああ last3Messages",
+      last3Messages
+    );
+    generatedMessage = await messageGeneratorGatewayPort.generateWithHuman({
+      apiKey,
+      info: {
+        messages: [
+          // 要約を先頭に持ってくる
+          { content: summarizedAiMsg, userName: currentAiUser.name },
+          ...last3Messages.reverse().map((msg) => ({
+            content: msg.content,
+            userName:
+              latestUsers.find((user) => user.userId === msg.userId)?.name ||
+              "",
+          })),
+        ],
+        targetUserName: currentMsgUser.name,
+        selfUserName: nextAiUser.name,
+        gptSystem: nextAiMember?.gptSystem
+          ? nextAiMember?.gptSystem
+          : nextAiUser.originalGptSystem,
+      },
+    });
+  } else {
+    // 人の発言を含まない場合
+
+    // 要約の末尾に最近の2件のメッセージを追加
+    const summarizedAiMsgWithLastTwo = `${summarizedAiMsg}\n${lastTwoMsgs
+      .map((msg) => msg.content)
+      .join("\n")}`;
+    // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
+    generatedMessage = await messageGeneratorGatewayPort.generate({
+      apiKey,
+      info: {
+        // 次のメッセージの発言者のSystemを指定
+        gptSystem: nextAiMember?.gptSystem
+          ? nextAiMember?.gptSystem
+          : nextAiUser.originalGptSystem,
+        // 現在のメッセージの発言者の名前をpromptに入れるために指定
+        userName: currentAiUser.name,
+        aiMessageContent: summarizedAiMsgWithLastTwo,
+      },
+    });
+  }
   // メッセージ生成中に割り込まれていないかの判定処理(メッセージ生成完了後、messageIdのメッセージの子メッセージを取得)
   const isInterrupted = await messageGatewayPort.findChildMessage({
     parentId: currentMsgId,

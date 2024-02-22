@@ -4,8 +4,17 @@ import { User } from "../entities/User";
 
 type MessageInfo = {
   aiMessageContent: string; // メッセージの本文
-  humanMessageContent?: string; // 人のメッセージ
   userName: User["name"];
+  gptSystem: User["originalGptSystem"] | ChatRoomMember["gptSystem"];
+};
+
+type MessageInfoWithHuman = {
+  messages: {
+    content: string;
+    userName: User["name"];
+  }[];
+  targetUserName: User["name"];
+  selfUserName: User["name"];
   gptSystem: User["originalGptSystem"] | ChatRoomMember["gptSystem"];
 };
 
@@ -20,6 +29,11 @@ export type GenerateProps = {
   apiKey: string;
 };
 
+export type GenerateWithHumanProps = {
+  info: MessageInfoWithHuman;
+  apiKey: string;
+};
+
 export type GenerateResponse = {
   target: string;
   content: string;
@@ -28,6 +42,8 @@ export type GenerateResponse = {
 export interface MessageGeneratorGatewayPort {
   // ChatGPTに500文字以内で要約を要求
   summarize(p: SummarizeProps): Promise<string>;
-  // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
+  // ChatGPTに次のメッセージの生成を要求
   generate(p: GenerateProps): Promise<GenerateResponse>;
+  // ChatGPTに次のメッセージの生成を要求(人のメッセージも加味する)
+  generateWithHuman(p: GenerateWithHumanProps): Promise<GenerateResponse>;
 }

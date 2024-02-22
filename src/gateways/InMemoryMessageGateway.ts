@@ -28,7 +28,7 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
     if (!msg) {
       throw new Error(`No such message id. : ${fromMessageId}`);
     }
-    let cnt = 0;
+    let cnt = 1;
     const results = [msg];
 
     while (cnt < recursiveCount) {
