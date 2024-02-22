@@ -15,28 +15,41 @@ const MAX_TEXT_COUNT_TO_SUMMARIZE = 500;
 export class InMemoryMessageGeneratorGateway
   implements MessageGeneratorGatewayPort
 {
-  summarize({ messages, apiKey, gptSystem }: SummarizeProps): Promise<string> {
+  summarize({
+    messages,
+    apiKey,
+    gptSystem,
+    model,
+  }: SummarizeProps): Promise<string> {
     const joinedMessage = messages.map((msg) => msg.content).join(`
 `);
     if (joinedMessage.length <= MAX_TEXT_COUNT_TO_SUMMARIZE) {
       return Promise.resolve(joinedMessage);
     }
 
-    return createChatCompletion(apiKey, {
-      messages: [
-        {
-          content: gptSystem,
-          role: "system",
-        },
-        {
-          content: `次の文章は過去のあなたの発言を集めたものです。${MAX_TEXT_COUNT_TO_SUMMARIZE}文字以内で要約してあなたらしい発言をしてください。: ${joinedMessage}`,
-          role: "user",
-        },
-      ],
-    });
+    return createChatCompletion(
+      apiKey,
+      {
+        messages: [
+          {
+            content: gptSystem,
+            role: "system",
+          },
+          {
+            content: `次の文章は過去のあなたの発言を集めたものです。${MAX_TEXT_COUNT_TO_SUMMARIZE}文字以内で要約してあなたらしい発言をしてください。: ${joinedMessage}`,
+            role: "user",
+          },
+        ],
+      },
+      model
+    );
   }
 
-  async generate({ info, apiKey }: GenerateProps): Promise<GenerateResponse> {
+  async generate({
+    info,
+    apiKey,
+    model,
+  }: GenerateProps): Promise<GenerateResponse> {
     // generateする
     const messages: ChatCompletionMessageParam[] = [
       {
@@ -48,9 +61,13 @@ export class InMemoryMessageGeneratorGateway
         role: "user",
       },
     ];
-    const txt = await createChatCompletion(apiKey, {
-      messages,
-    });
+    const txt = await createChatCompletion(
+      apiKey,
+      {
+        messages,
+      },
+      model
+    );
 
     try {
       return extractJSON(txt);
@@ -64,6 +81,7 @@ export class InMemoryMessageGeneratorGateway
   async generateWithHuman({
     info,
     apiKey,
+    model,
   }: GenerateWithHumanProps): Promise<GenerateResponse> {
     // generateする
     const messages: ChatCompletionMessageParam[] = [
@@ -80,9 +98,13 @@ export class InMemoryMessageGeneratorGateway
         role: "user",
       },
     ];
-    const txt = await createChatCompletion(apiKey, {
-      messages,
-    });
+    const txt = await createChatCompletion(
+      apiKey,
+      {
+        messages,
+      },
+      model
+    );
 
     try {
       return extractJSON(txt);

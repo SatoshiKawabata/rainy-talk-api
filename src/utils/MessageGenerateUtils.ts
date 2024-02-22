@@ -13,9 +13,10 @@ import { UserGatewayPort } from "../ports/UserGatewayPort";
 type GenerateMessageRecursiveProps = {
   currentMessageId: Message["messageId"];
   apiKey: string;
+  model: string;
 };
 export const generateMessageRecursive = async (
-  { currentMessageId, apiKey }: GenerateMessageRecursiveProps,
+  { currentMessageId, apiKey, model }: GenerateMessageRecursiveProps,
   messageGatewayPort: MessageGatewayPort,
   messageSchedulerPort: MessageSchedulerPort,
   chatRoomGatewayPort: ChatRoomGatewayPort,
@@ -36,6 +37,7 @@ export const generateMessageRecursive = async (
   const nextFirstMessage = await generateNextMsg(
     currentMessageId,
     apiKey,
+    model,
     messageGatewayPort,
     chatRoomGatewayPort,
     userGatewayPort,
@@ -64,6 +66,7 @@ export const generateMessageRecursive = async (
         const msg = await generateNextMsg(
           targetMsgId,
           apiKey,
+          model,
           messageGatewayPort,
           chatRoomGatewayPort,
           userGatewayPort,
@@ -102,6 +105,7 @@ export const generateMessageRecursive = async (
 const generateNextMsg = async (
   currentMsgId: Message["messageId"],
   apiKey: string,
+  model: string,
   messageGatewayPort: MessageGatewayPort,
   chatRoomGatewayPort: ChatRoomGatewayPort,
   userGatewayPort: UserGatewayPort,
@@ -261,6 +265,7 @@ const generateNextMsg = async (
       ? currentAiMember?.gptSystem
       : currentAiUser.originalGptSystem,
     apiKey,
+    model,
   });
 
   let generatedMessage: GenerateResponse;
@@ -278,6 +283,7 @@ const generateNextMsg = async (
     );
     generatedMessage = await messageGeneratorGatewayPort.generateWithHuman({
       apiKey,
+      model,
       info: {
         messages: [
           // 要約を先頭に持ってくる
@@ -315,6 +321,7 @@ const generateNextMsg = async (
         userName: currentAiUser.name,
         aiMessageContent: summarizedAiMsgWithLastTwo,
       },
+      model,
     });
   }
   // メッセージ生成中に割り込まれていないかの判定処理(メッセージ生成完了後、messageIdのメッセージの子メッセージを取得)

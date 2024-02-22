@@ -22,16 +22,19 @@ export type SummarizeProps = {
   messages: Message[];
   gptSystem: string;
   apiKey: string;
+  model: string;
 };
 
 export type GenerateProps = {
   info: MessageInfo;
   apiKey: string;
+  model: string;
 };
 
 export type GenerateWithHumanProps = {
   info: MessageInfoWithHuman;
   apiKey: string;
+  model: string;
 };
 
 export type GenerateResponse = {

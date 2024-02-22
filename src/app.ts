@@ -71,9 +71,10 @@ app.get("/next_message", async (req: Request, res: Response) => {
   console.log("/next_message", req.query);
   const messageId = Number(req.query.messageId);
   const apiKey = req.header("api-key")!;
+  const model = req.header("model") ?? "gpt-3.5-turbo";
   try {
     const message = await requestNextMessage(
-      { messageId, apiKey },
+      { messageId, apiKey, model },
       gateWays.message,
       gateWays.messageScheduler,
       gateWays.chatRoom,

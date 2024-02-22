@@ -77,10 +77,11 @@ export const postMessage = async (
 export type RequestNextMessageProps = {
   messageId: Message["messageId"];
   apiKey: string;
+  model: string;
 };
 
 export const requestNextMessage = async (
-  { apiKey, messageId }: RequestNextMessageProps,
+  { apiKey, messageId, model }: RequestNextMessageProps,
   messageGatewayPort: MessageGatewayPort,
   messageSchedulerPort: MessageSchedulerPort,
   chatRoomGatewayPort: ChatRoomGatewayPort,
@@ -108,6 +109,7 @@ export const requestNextMessage = async (
         {
           currentMessageId: tailMessageId,
           apiKey,
+          model,
         },
         messageGatewayPort,
         messageSchedulerPort,
@@ -137,6 +139,7 @@ export const requestNextMessage = async (
     {
       currentMessageId: messageId,
       apiKey,
+      model,
     },
     messageGatewayPort,
     messageSchedulerPort,

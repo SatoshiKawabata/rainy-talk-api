@@ -7,14 +7,15 @@ type RequestParam = {
 
 export const createChatCompletion = async (
   apiKey: string,
-  reqParam: RequestParam
+  reqParam: RequestParam,
+  model: string
 ): Promise<string> => {
   const openAi = new OpenAI({
     apiKey,
   });
   try {
     const param = {
-      model: "gpt-3.5-turbo-1106",
+      model,
       messages: reqParam.messages,
     };
     console.log("openAi.chat.completions.create", JSON.stringify(param));
