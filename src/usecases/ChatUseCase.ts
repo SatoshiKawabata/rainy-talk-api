@@ -21,7 +21,14 @@ export type InitializeChatResponse = {
   room: ChatRoom;
   members: (ChatRoomMember & Pick<User, "name">)[];
 };
-
+/**
+ * チャットルームの初期化
+ * チャットルームを作成し、チャットメンバーを追加する
+ * @param p 初期化するチャットルームの情報
+ * @param userGateway ユーザーゲートウェイ
+ * @param chatRoomGateway チャットルームゲートウェイ
+ * @returns 初期化したチャットルームの情報
+ */
 export const initializeChat = async (
   p: InitializeChatProps,
   userGateway: UserGatewayPort,
