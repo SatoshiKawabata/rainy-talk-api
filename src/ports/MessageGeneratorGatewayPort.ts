@@ -4,7 +4,8 @@ import { User } from "../entities/User";
 
 type MessageInfo = {
   aiMessageContent: string; // メッセージの本文
-  userName: User["name"];
+  targetUserName: User["name"];
+  selfUserName: User["name"];
   gptSystem: User["originalGptSystem"] | ChatRoomMember["gptSystem"];
 };
 

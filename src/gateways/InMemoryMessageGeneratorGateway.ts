@@ -10,7 +10,7 @@ import { createChatCompletion } from "../utils/OpenAiUtils";
 import "dotenv/config";
 import { extractJSON } from "../utils/stringUtils";
 
-const MAX_TEXT_COUNT_TO_SUMMARIZE = 500;
+const MAX_TEXT_COUNT_TO_SUMMARIZE = 2000;
 
 export class InMemoryMessageGeneratorGateway
   implements MessageGeneratorGatewayPort
@@ -57,7 +57,11 @@ export class InMemoryMessageGeneratorGateway
         role: "system",
       },
       {
-        content: createAiPrompt(info.userName, info.aiMessageContent),
+        content: createAiPrompt(
+          info.targetUserName,
+          info.aiMessageContent,
+          info.selfUserName
+        ),
         role: "user",
       },
     ];
@@ -73,7 +77,7 @@ export class InMemoryMessageGeneratorGateway
       return extractJSON(txt);
     } catch (e) {
       return {
-        target: info.userName,
+        target: info.targetUserName,
         content: txt,
       };
     }
@@ -124,7 +128,7 @@ const createAiPromptWithHuman = (
 ) => {
   return `あなたは${selfUserName}です。あなたは${targetUserName}さんと人間と会話をしています。
 ${messages.map((msg) => `${msg.userName}の発言「${msg.content}」`).join("\n")}
-この後にあなたが人間に返答します。
+この後にあなたが人間に対して返答してください。
 
 以下の5パターンのうち合致する条件で返答してください。
 ・もし人間があなたの立場に近い場合、人間の意見に同調してください。
@@ -141,14 +145,18 @@ ${messages.map((msg) => `${msg.userName}の発言「${msg.content}」`).join("\n
 必ず以下のJSONフォーマットでtargetとcontentという変数名を変えずに返答ください。
 {
   "target": "人間",
-  "content": "{あなたの反論}"
+  "content": "{あなた(${selfUserName})の反論}"
 }`;
 };
 
-const createAiPrompt = (userName: string, content: string) => {
+const createAiPrompt = (
+  targetUserName: string,
+  content: string,
+  selfUserName: string
+) => {
   return `
-あなたは${userName}さんと会話をしています。
-${userName}さん「${content}」
+あなたは${targetUserName}さんと会話をしています。
+${targetUserName}さん「${content}」
 この後にあなたが反論します。
 
 その際に以下のルールを守ってください。
@@ -162,7 +170,7 @@ ${userName}さん「${content}」
 
 必ず以下のJSONフォーマットでtargetとcontentという変数名を変えずに返答ください。
 {
-  "target": "${userName}",
+  "target": "${targetUserName}",
   "content": "{あなたの反論}"
 }
 `;

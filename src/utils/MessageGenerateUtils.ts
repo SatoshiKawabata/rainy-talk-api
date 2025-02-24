@@ -141,13 +141,13 @@ const generateNextMsg = async (
   const humanUsers = (
     await userGatewayPort.getUsers({ ids: currentChatRoomUserIds })
   ).filter((u) => !u.isAi);
-  // 直近の3件のメッセージを取得
-  const last3Messages = await messageGatewayPort.getMessagesRecursive({
+  // 直近の10件のメッセージを取得
+  const last10Messages = await messageGatewayPort.getMessagesRecursive({
     fromMessageId: currentMsgId,
-    recursiveCount: 3,
+    recursiveCount: 10,
   });
-  // 直近の3件のメッセージから人の発言を取得
-  const humanMsg = last3Messages.find((msg) => {
+  // 直近の10件のメッセージから人の発言を取得
+  const humanMsg = last10Messages.find((msg) => {
     if (humanUsers.map((h) => h.userId).includes(msg.userId)) {
       return true;
     }
@@ -246,17 +246,18 @@ const generateNextMsg = async (
       ErrorCodes.FailedToGenerateNextMessage
     );
   }
+  const SUMMARIZE_TEXT_LIMIT = 10000;
   // 現在のAIのメッセージを要約するために取得
   const currentAiUserMsgs = await messageGatewayPort.getMessagesRecursiveByUser(
     {
       fromMessageId: currentMsg.messageId,
       filteringUserId: currentAiUserId,
-      textLimit: 5000,
+      textLimit: SUMMARIZE_TEXT_LIMIT,
     }
   );
-  // 最近の2件のメッセージは要約に含めない
+  // 最近の9件のメッセージは要約に含めない
   const currentAiUserMsgsWithoutLastTwo = currentAiUserMsgs.reverse();
-  const lastTwoMsgs = currentAiUserMsgsWithoutLastTwo.slice(-2);
+  const lastNineMsgs = currentAiUserMsgsWithoutLastTwo.slice(-9);
   // ChatGPTに500文字以内で要約を要求
   const summarizedAiMsg = await messageGeneratorGatewayPort.summarize({
     messages: currentAiUserMsgsWithoutLastTwo,
@@ -273,13 +274,13 @@ const generateNextMsg = async (
   if (humanContinuousMsgText) {
     // 人の発言を含む場合
 
-    // 3件のメッセージと要約を含めて、AIの次のメッセージの生成を要求
+    // 10件のメッセージと要約を含めて、AIの次のメッセージの生成を要求
     const latestUsers = await userGatewayPort.getUsers({
-      ids: last3Messages.map((msg) => msg.userId),
+      ids: last10Messages.map((msg) => msg.userId),
     });
     console.log(
-      "ああああああああああああああああああああ last3Messages",
-      last3Messages
+      "ああああああああああああああああああああ last10Messages",
+      last10Messages
     );
     generatedMessage = await messageGeneratorGatewayPort.generateWithHuman({
       apiKey,
@@ -288,14 +289,14 @@ const generateNextMsg = async (
         messages: [
           // 要約を先頭に持ってくる
           { content: summarizedAiMsg, userName: currentAiUser.name },
-          ...last3Messages.reverse().map((msg) => ({
+          ...last10Messages.reverse().map((msg) => ({
             content: msg.content,
             userName:
               latestUsers.find((user) => user.userId === msg.userId)?.name ||
               "",
           })),
         ],
-        targetUserName: currentMsgUser.name,
+        targetUserName: currentAiUser.name,
         selfUserName: nextAiUser.name,
         gptSystem: nextAiMember?.gptSystem
           ? nextAiMember?.gptSystem
@@ -305,8 +306,8 @@ const generateNextMsg = async (
   } else {
     // 人の発言を含まない場合
 
-    // 要約の末尾に最近の2件のメッセージを追加
-    const summarizedAiMsgWithLastTwo = `${summarizedAiMsg}\n${lastTwoMsgs
+    // 要約の末尾に最近の9件のメッセージを追加
+    const summarizedAiMsgWithLastTwo = `${summarizedAiMsg}\n${lastNineMsgs
       .map((msg) => msg.content)
       .join("\n")}`;
     // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
@@ -318,7 +319,8 @@ const generateNextMsg = async (
           ? nextAiMember?.gptSystem
           : nextAiUser.originalGptSystem,
         // 現在のメッセージの発言者の名前をpromptに入れるために指定
-        userName: currentAiUser.name,
+        targetUserName: currentAiUser.name,
+        selfUserName: nextAiUser.name,
         aiMessageContent: summarizedAiMsgWithLastTwo,
       },
       model,
