@@ -126,16 +126,16 @@ const createAiPromptWithHuman = (
   targetUserName: string,
   selfUserName: string
 ) => {
-  return `あなたは${selfUserName}です。あなたは${targetUserName}さんと人間と会話をしています。
+  return `あなたは${selfUserName}です。あなた(${selfUserName})は${targetUserName}さんと人間と会話をしています。
 ${messages.map((msg) => `${msg.userName}の発言「${msg.content}」`).join("\n")}
-この後にあなたが人間に対して返答してください。
+この後にあなた(${selfUserName})が人間に対して返答してください。
 
 以下の5パターンのうち合致する条件で返答してください。
-・もし人間があなたの立場に近い場合、人間の意見に同調してください。
+・もし人間があなた(${selfUserName})の立場に近い場合、人間の意見に同調してください。
 ・もし人間が${targetUserName}さんの立場に近い場合、人間に反論してください。
 ・もし人間の発言が関係ない話題の場合、その内容に言及した上で反論してください。
 ・もし人間の発言が不適切な場合、その旨を伝えた上で反論してください。
-・もし人間の発言があなたへの質問である場合、その質問に答えてください。
+・もし人間の発言があなた(${selfUserName})への質問である場合、その質問に答えてください。
 
 その際に以下のルールを守ってください。
 ・160文字程度で書いてください。
@@ -154,10 +154,9 @@ const createAiPrompt = (
   content: string,
   selfUserName: string
 ) => {
-  return `
-あなたは${targetUserName}さんと会話をしています。
+  return `あなたは${selfUserName}です。あなた(${selfUserName})は${targetUserName}さんと会話をしています。
 ${targetUserName}さん「${content}」
-この後にあなたが反論します。
+この後にあなた(${selfUserName})が反論します。
 
 その際に以下のルールを守ってください。
 ・160文字程度で書いてください。
@@ -171,7 +170,7 @@ ${targetUserName}さん「${content}」
 必ず以下のJSONフォーマットでtargetとcontentという変数名を変えずに返答ください。
 {
   "target": "${targetUserName}",
-  "content": "{あなたの反論}"
+  "content": "{あなた(${selfUserName})の反論}"
 }
 `;
 };
