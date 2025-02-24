@@ -3,19 +3,13 @@ import { Message } from "../entities/Message";
 import { User } from "../entities/User";
 
 type MessageInfo = {
-  aiMessageContent: string; // メッセージの本文
-  targetUserName: User["name"];
-  selfUserName: User["name"];
-  gptSystem: User["originalGptSystem"] | ChatRoomMember["gptSystem"];
-};
-
-type MessageInfoWithHuman = {
   messages: {
     content: string;
     userName: User["name"];
   }[];
   targetUserName: User["name"];
   selfUserName: User["name"];
+  humanName: User["name"];
   gptSystem: User["originalGptSystem"] | ChatRoomMember["gptSystem"];
 };
 
@@ -32,12 +26,6 @@ export type GenerateProps = {
   model: string;
 };
 
-export type GenerateWithHumanProps = {
-  info: MessageInfoWithHuman;
-  apiKey: string;
-  model: string;
-};
-
 export type GenerateResponse = {
   target: string;
   content: string;
@@ -49,5 +37,5 @@ export interface MessageGeneratorGatewayPort {
   // ChatGPTに次のメッセージの生成を要求
   generate(p: GenerateProps): Promise<GenerateResponse>;
   // ChatGPTに次のメッセージの生成を要求(人のメッセージも加味する)
-  generateWithHuman(p: GenerateWithHumanProps): Promise<GenerateResponse>;
+  generateWithHuman(p: GenerateProps): Promise<GenerateResponse>;
 }

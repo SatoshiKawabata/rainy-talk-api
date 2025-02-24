@@ -14,6 +14,7 @@ import {
   GetMessagesByRoomIdProps,
   GetMessagesRecursiveByHumanProps,
 } from "../ports/MessageGatewayPort";
+import { saveMessages } from "../utils/FileSystemUtils";
 
 const messages: Message[] = [];
 let newMessageId = 0;
@@ -183,7 +184,9 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
       parentMessageId: p.parentMessageId,
     };
     messages.push(newMessage);
-    console.log("push messages", messages);
+    // console.log("push messages", messages);
+    console.log("新しいメッセージを追加: ", newMessage);
+    // saveMessages(messages);
     newMessageId++;
     return Promise.resolve(newMessage);
   }

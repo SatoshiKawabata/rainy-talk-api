@@ -2,7 +2,6 @@ import { ChatCompletionMessageParam } from "openai/resources";
 import {
   GenerateProps,
   GenerateResponse,
-  GenerateWithHumanProps,
   MessageGeneratorGatewayPort,
   SummarizeProps,
 } from "../ports/MessageGeneratorGatewayPort";
@@ -59,7 +58,7 @@ export class InMemoryMessageGeneratorGateway
       {
         content: createAiPrompt(
           info.targetUserName,
-          info.aiMessageContent,
+          info.messages,
           info.selfUserName
         ),
         role: "user",
@@ -86,7 +85,7 @@ export class InMemoryMessageGeneratorGateway
     info,
     apiKey,
     model,
-  }: GenerateWithHumanProps): Promise<GenerateResponse> {
+  }: GenerateProps): Promise<GenerateResponse> {
     // generateする
     const messages: ChatCompletionMessageParam[] = [
       {
@@ -97,7 +96,8 @@ export class InMemoryMessageGeneratorGateway
         content: createAiPromptWithHuman(
           info.messages,
           info.targetUserName,
-          info.selfUserName
+          info.selfUserName,
+          info.humanName
         ),
         role: "user",
       },
@@ -122,20 +122,23 @@ export class InMemoryMessageGeneratorGateway
 }
 
 const createAiPromptWithHuman = (
-  messages: GenerateWithHumanProps["info"]["messages"],
+  messages: GenerateProps["info"]["messages"],
   targetUserName: string,
-  selfUserName: string
+  selfUserName: string,
+  humanName: string
 ) => {
-  return `あなたは${selfUserName}です。あなた(${selfUserName})は${targetUserName}さんと人間と会話をしています。
+  return `あなたは${selfUserName}です。あなた(${selfUserName})は${targetUserName}さんと、${humanName}という名前のもう一人の会話の参加者の人と会話をしています。
+これまでの会話の流れは以下です。
 ${messages.map((msg) => `${msg.userName}の発言「${msg.content}」`).join("\n")}
-この後にあなた(${selfUserName})が人間に対して返答してください。
+
+この後にあなた(${selfUserName})が参加者の人(${humanName})に対して返答してください。
 
 以下の5パターンのうち合致する条件で返答してください。
-・もし人間があなた(${selfUserName})の立場に近い場合、人間の意見に同調してください。
-・もし人間が${targetUserName}さんの立場に近い場合、人間に反論してください。
-・もし人間の発言が関係ない話題の場合、その内容に言及した上で反論してください。
-・もし人間の発言が不適切な場合、その旨を伝えた上で反論してください。
-・もし人間の発言があなた(${selfUserName})への質問である場合、その質問に答えてください。
+・もし参加者の人(${humanName})があなた(${selfUserName})の立場に近い場合、参加者の人(${humanName})の意見に同調してください。
+・もし参加者の人(${humanName})が${targetUserName}さんの立場に近い場合、参加者の人(${humanName})に反論してください。
+・もし参加者の人(${humanName})の発言が関係ない話題の場合、その内容に言及した上で反論してください。
+・もし参加者の人(${humanName})の発言が不適切な場合、その旨を伝えた上で反論してください。
+・もし参加者の人(${humanName})の発言があなた(${selfUserName})への質問である場合、その質問に答えてください。
 
 その際に以下のルールを守ってください。
 ・160文字程度で書いてください。
@@ -144,18 +147,20 @@ ${messages.map((msg) => `${msg.userName}の発言「${msg.content}」`).join("\n
 
 必ず以下のJSONフォーマットでtargetとcontentという変数名を変えずに返答ください。
 {
-  "target": "人間",
+  "target": "${humanName}",
   "content": "{あなた(${selfUserName})の反論}"
 }`;
 };
 
 const createAiPrompt = (
   targetUserName: string,
-  content: string,
+  messages: GenerateProps["info"]["messages"],
   selfUserName: string
 ) => {
   return `あなたは${selfUserName}です。あなた(${selfUserName})は${targetUserName}さんと会話をしています。
-${targetUserName}さん「${content}」
+これまでの会話の流れは以下です。
+${messages.map((msg) => `${msg.userName}の発言「${msg.content}」`).join("\n")}
+
 この後にあなた(${selfUserName})が反論します。
 
 その際に以下のルールを守ってください。
