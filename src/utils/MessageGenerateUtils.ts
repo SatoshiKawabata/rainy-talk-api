@@ -3,6 +3,7 @@ import { ErrorCodes, UseCaseError } from "../errors/UseCaseError";
 import { ChatRoomGatewayPort } from "../ports/ChatRoomGatewayPort";
 import { MessageGatewayPort } from "../ports/MessageGatewayPort";
 import {
+  GenerateProps,
   GenerateResponse,
   MessageGeneratorGatewayPort,
 } from "../ports/MessageGeneratorGatewayPort";
@@ -95,6 +96,8 @@ export const generateMessageRecursive = async (
 
 /**
  * メッセージを生成する
+ * 最新10件の会話をそのままに、それ以前の相手のAIの発言を要約して、
+ * その要約と最新10件の会話をもとにChatGPTに次のメッセージの生成を要求する
  * エラーが発報すると終了
  * @param currentMsgId // 現在のAIのメッセージのID
  * @param messageGatewayPort
@@ -137,34 +140,12 @@ const generateNextMsg = async (
   const currentChatRoomUserIds = (
     await chatRoomGatewayPort.getChatMembers({ roomId: currentMsg.roomId })
   ).map((m) => m.userId);
-  // 現在のメッセージのルームの人間のユーザーを取得
-  const humanUsers = (
-    await userGatewayPort.getUsers({ ids: currentChatRoomUserIds })
-  ).filter((u) => !u.isAi);
-  // 直近の3件のメッセージを取得
-  const last3Messages = await messageGatewayPort.getMessagesRecursive({
+
+  // 直近の10件のメッセージを取得
+  const last10Messages = await messageGatewayPort.getMessagesRecursive({
     fromMessageId: currentMsgId,
-    recursiveCount: 3,
+    recursiveCount: 10,
   });
-  // 直近の3件のメッセージから人の発言を取得
-  const humanMsg = last3Messages.find((msg) => {
-    if (humanUsers.map((h) => h.userId).includes(msg.userId)) {
-      return true;
-    }
-    return false;
-  });
-  console.log("humanMsg", humanMsg);
-  // 現在のメッセージから3つ遡ったときに、人の発言があればそれを取得して加味する
-  if (humanMsg) {
-    const humanContinuousMsgs =
-      await messageGatewayPort.getContinuousMessagesByUser({
-        fromMessageId: humanMsg.messageId,
-      });
-    // 人の発言を連結する
-    humanContinuousMsgText = humanContinuousMsgs
-      .map((msg) => msg.content)
-      .join("\n");
-  }
 
   // 直近のAIの発言者のIDを取得する
   let currentAiUserId: number | undefined; // AIの発言を要約するためのID(undefinedの場合は適当なAIのメッセージの発言者のIDを後続の処理で指定する)
@@ -246,83 +227,85 @@ const generateNextMsg = async (
       ErrorCodes.FailedToGenerateNextMessage
     );
   }
+  const SUMMARIZE_TEXT_LIMIT = 15000;
   // 現在のAIのメッセージを要約するために取得
   const currentAiUserMsgs = await messageGatewayPort.getMessagesRecursiveByUser(
     {
       fromMessageId: currentMsg.messageId,
       filteringUserId: currentAiUserId,
-      textLimit: 5000,
+      textLimit: SUMMARIZE_TEXT_LIMIT,
     }
   );
-  // 最近の2件のメッセージは要約に含めない
-  const currentAiUserMsgsWithoutLastTwo = currentAiUserMsgs.reverse();
-  const lastTwoMsgs = currentAiUserMsgsWithoutLastTwo.slice(-2);
-  // ChatGPTに500文字以内で要約を要求
-  const summarizedAiMsg = await messageGeneratorGatewayPort.summarize({
-    messages: currentAiUserMsgsWithoutLastTwo,
-    // 現在のメッセージの発言者のSystemを指定
-    gptSystem: currentAiMember?.gptSystem
-      ? currentAiMember?.gptSystem
-      : currentAiUser.originalGptSystem,
-    apiKey,
-    model,
-  });
+  // 最新10件のメッセージに入っているAIの発言は除いて要約する
+  const reversedCurrentAiUserMsgs = currentAiUserMsgs.reverse();
+  const last10MessagesIds = last10Messages.map((m) => m.messageId);
+  const aiMsgsWithoutLast10 = reversedCurrentAiUserMsgs.filter(
+    (msg) => !last10MessagesIds.includes(msg.messageId)
+  );
+  // 最新10件のメッセージよりも過去のメッセージを対象にChatGPTに500文字以内で要約を要求
+  const summarizedAiMsg =
+    aiMsgsWithoutLast10.length > 0
+      ? await messageGeneratorGatewayPort.summarize({
+          messages: aiMsgsWithoutLast10,
+          // 現在のメッセージの発言者のSystemを指定
+          gptSystem: currentAiMember?.gptSystem
+            ? currentAiMember?.gptSystem
+            : currentAiUser.originalGptSystem,
+          apiKey,
+          model,
+        })
+      : "";
 
   let generatedMessage: GenerateResponse;
 
-  if (humanContinuousMsgText) {
-    // 人の発言を含む場合
+  // 現在のメッセージのルームの人間のユーザーを取得
+  const humanUsers = (
+    await userGatewayPort.getUsers({ ids: currentChatRoomUserIds })
+  ).filter((u) => !u.isAi);
+  const humanUser = humanUsers[0];
+  // 直近の3件のメッセージのなかに人の発言があるか？
+  const hasHumanMsg = !!last10Messages.slice(0, 3).find((msg) => {
+    if (humanUsers.map((h) => h.userId).includes(msg.userId)) {
+      return true;
+    }
+    return false;
+  });
 
-    // 3件のメッセージと要約を含めて、AIの次のメッセージの生成を要求
-    const latestUsers = await userGatewayPort.getUsers({
-      ids: last3Messages.map((msg) => msg.userId),
-    });
-    console.log(
-      "ああああああああああああああああああああ last3Messages",
-      last3Messages
+  // 最新の10件のメッセージの発言者を取得
+  const latestUsers = await userGatewayPort.getUsers({
+    ids: last10Messages.map((msg) => msg.userId),
+  });
+
+  const props: GenerateProps = {
+    apiKey,
+    model,
+    info: {
+      messages: [
+        // 要約を先頭に持ってくる
+        { content: summarizedAiMsg, userName: currentAiUser.name },
+        ...last10Messages.reverse().map((msg) => ({
+          content: msg.content,
+          userName:
+            latestUsers.find((user) => user.userId === msg.userId)?.name || "",
+        })),
+      ],
+      targetUserName: currentAiUser.name,
+      selfUserName: nextAiUser.name,
+      humanName: humanUser.name,
+      gptSystem: nextAiMember?.gptSystem
+        ? nextAiMember?.gptSystem
+        : nextAiUser.originalGptSystem,
+    },
+  };
+
+  if (hasHumanMsg) {
+    // 3件のメッセージの中に人の発言を含む場合
+    generatedMessage = await messageGeneratorGatewayPort.generateWithHuman(
+      props
     );
-    generatedMessage = await messageGeneratorGatewayPort.generateWithHuman({
-      apiKey,
-      model,
-      info: {
-        messages: [
-          // 要約を先頭に持ってくる
-          { content: summarizedAiMsg, userName: currentAiUser.name },
-          ...last3Messages.reverse().map((msg) => ({
-            content: msg.content,
-            userName:
-              latestUsers.find((user) => user.userId === msg.userId)?.name ||
-              "",
-          })),
-        ],
-        targetUserName: currentMsgUser.name,
-        selfUserName: nextAiUser.name,
-        gptSystem: nextAiMember?.gptSystem
-          ? nextAiMember?.gptSystem
-          : nextAiUser.originalGptSystem,
-      },
-    });
   } else {
     // 人の発言を含まない場合
-
-    // 要約の末尾に最近の2件のメッセージを追加
-    const summarizedAiMsgWithLastTwo = `${summarizedAiMsg}\n${lastTwoMsgs
-      .map((msg) => msg.content)
-      .join("\n")}`;
-    // ChatGPTに次のメッセージの生成を要求(現在のメッセージが人の場合、人のメッセージも加味する)
-    generatedMessage = await messageGeneratorGatewayPort.generate({
-      apiKey,
-      info: {
-        // 次のメッセージの発言者のSystemを指定
-        gptSystem: nextAiMember?.gptSystem
-          ? nextAiMember?.gptSystem
-          : nextAiUser.originalGptSystem,
-        // 現在のメッセージの発言者の名前をpromptに入れるために指定
-        userName: currentAiUser.name,
-        aiMessageContent: summarizedAiMsgWithLastTwo,
-      },
-      model,
-    });
+    generatedMessage = await messageGeneratorGatewayPort.generate(props);
   }
   // メッセージ生成中に割り込まれていないかの判定処理(メッセージ生成完了後、messageIdのメッセージの子メッセージを取得)
   const isInterrupted = await messageGatewayPort.findChildMessage({
