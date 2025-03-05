@@ -3,7 +3,20 @@ import winston from "winston";
 const logger = winston.createLogger({
   level: "info",
   format: winston.format.combine(
-    winston.format.timestamp(),
+    winston.format.timestamp({
+      format: () => {
+        return new Date().toLocaleString("ja-JP", {
+          timeZone: "Asia/Tokyo",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        });
+      },
+    }),
     winston.format.json()
   ),
   transports: [
