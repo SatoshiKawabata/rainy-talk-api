@@ -8,6 +8,7 @@ import {
 } from "./usecases/ChatUseCase";
 import gateWays from "./gateways";
 import { UseCaseError } from "./errors/UseCaseError";
+import logger from "./utils/logger";
 
 const app = express();
 
@@ -18,19 +19,23 @@ app.use((req, res, next) => {
   const apiKey = req.header("api-key");
   if (!apiKey) {
     res.status(401).json({ message: "Unauthorized" });
-    console.error(
-      "Error: no api-key (req:",
-      req.path,
-      JSON.stringify(req.body)
-    );
+    logger.error("Error: no api-key", {
+      path: req.path,
+      body: req.body,
+    });
     return;
   }
-  console.log("req:", req.url, JSON.stringify(req.body));
+  logger.info("req: ", {
+    url: req.url,
+    body: req.body,
+  });
   next();
 });
 
 app.get("/hello", (req: Request, res: Response) => {
-  console.log(req.query);
+  logger.info("/hello req: ", {
+    query: req.query,
+  });
   res.status(200).json({ message: "Hello World" });
 });
 
@@ -40,7 +45,7 @@ app.post("/data", (req, res) => {
 });
 
 app.post("/initialize", async (req: Request, res: Response) => {
-  console.log("/initialize", JSON.stringify(req.body));
+  logger.info("/initialize", { body: req.body });
   try {
     const data = await initializeChat(
       req.body,
@@ -50,25 +55,31 @@ app.post("/initialize", async (req: Request, res: Response) => {
     res.json(data);
   } catch (e: unknown) {
     const error = e as UseCaseError;
-    console.error(error);
+    logger.error("Initialize error", {
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: error.message });
   }
 });
 
 app.post("/message", async (req: Request, res: Response) => {
-  console.log("/message", JSON.stringify(req.body));
+  logger.info("/message", { body: req.body });
   try {
     const message = await postMessage(req.body, gateWays.message);
     res.json({ message });
   } catch (e: unknown) {
     const error = e as UseCaseError;
-    console.error(error);
+    logger.error("/message error", {
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: error.message });
   }
 });
 
 app.get("/next_message", async (req: Request, res: Response) => {
-  console.log("/next_message", req.query);
+  logger.info("/next_message", { query: req.query });
   const messageId = Number(req.query.messageId);
   const apiKey = req.header("api-key")!;
   const model = req.header("model") ?? "gpt-4o-mini";
@@ -84,20 +95,23 @@ app.get("/next_message", async (req: Request, res: Response) => {
     res.json({ message });
   } catch (e: unknown) {
     const error = e as UseCaseError;
-    console.error(error);
+    logger.error("Next message error", {
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ message: error.message });
   }
 });
 
 app.get("/dump/users", async (req: Request, res: Response) => {
   const users = await gateWays.user.getAllUsers();
-  console.log("/dump/users", JSON.stringify(users));
+  logger.info("/dump/users", { users });
   res.json({ users });
 });
 
 app.get("/dump/chat_rooms", async (req: Request, res: Response) => {
   const chatRooms = await gateWays.chatRoom.getAllChatRooms();
-  console.log("/dump/chat_rooms", JSON.stringify(chatRooms));
+  logger.info("/dump/chat_rooms", { chatRooms });
   res.json({ chatRooms });
 });
 
@@ -108,7 +122,7 @@ app.get(
     const chatRoomMembers = await gateWays.chatRoom.getChatMembers({
       roomId,
     });
-    console.log("/dump/chat_room_members", JSON.stringify(chatRoomMembers));
+    logger.info("/dump/chat_room_members", { chatRoomMembers });
     res.json({ chatRoomMembers });
   }
 );
@@ -117,7 +131,7 @@ app.get("/dump/messages/:roomId", async (req: Request, res: Response) => {
   const messages = await gateWays.message.getMessagesByRoomId({
     roomId: Number(req.params.roomId),
   });
-  console.log("/dump/messages", JSON.stringify(messages));
+  logger.info("/dump/messages", { messages });
   res.json({ messages });
 });
 
