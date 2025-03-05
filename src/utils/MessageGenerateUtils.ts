@@ -229,7 +229,7 @@ const generateNextMsg = async (
       ErrorCodes.FailedToGenerateNextMessage
     );
   }
-  const SUMMARIZE_TEXT_LIMIT = 7000;
+  const SUMMARIZE_TEXT_LIMIT = 5000;
   // 現在のAIのメッセージを要約するために取得
   const currentAiUserMsgs = await messageGatewayPort.getMessagesRecursiveByUser(
     {
