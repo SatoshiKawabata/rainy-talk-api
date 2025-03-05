@@ -94,9 +94,11 @@ export const generateMessageRecursive = async (
   return { nextMessage: nextFirstMessage };
 };
 
+const MAX_RECURSIVE_COUNT = 7;
+
 /**
  * メッセージを生成する
- * 最新10件の会話をそのままに、それ以前の相手のAIの発言を要約して、
+ * 最新 {MAX_RECURSIVE_COUNT} 件の会話をそのままに、それ以前の相手のAIの発言を要約して、
  * その要約と最新10件の会話をもとにChatGPTに次のメッセージの生成を要求する
  * エラーが発報すると終了
  * @param currentMsgId // 現在のAIのメッセージのID
@@ -141,10 +143,10 @@ const generateNextMsg = async (
     await chatRoomGatewayPort.getChatMembers({ roomId: currentMsg.roomId })
   ).map((m) => m.userId);
 
-  // 直近の10件のメッセージを取得
+  // 直近の {MAX_RECURSIVE_COUNT} 件のメッセージを取得
   const last10Messages = await messageGatewayPort.getMessagesRecursive({
     fromMessageId: currentMsgId,
-    recursiveCount: 10,
+    recursiveCount: MAX_RECURSIVE_COUNT,
   });
 
   // 直近のAIの発言者のIDを取得する
@@ -227,7 +229,7 @@ const generateNextMsg = async (
       ErrorCodes.FailedToGenerateNextMessage
     );
   }
-  const SUMMARIZE_TEXT_LIMIT = 15000;
+  const SUMMARIZE_TEXT_LIMIT = 7000;
   // 現在のAIのメッセージを要約するために取得
   const currentAiUserMsgs = await messageGatewayPort.getMessagesRecursiveByUser(
     {
