@@ -184,7 +184,9 @@ export class InMemoryMessageGateway implements MessageGatewayPort {
       parentMessageId: p.parentMessageId,
     };
     messages.push(newMessage);
-    logger.info("新しいメッセージを追加", { message: newMessage });
+    logger.info("新しいメッセージを追加", {
+      message: JSON.stringify(newMessage),
+    });
     newMessageId++;
     return Promise.resolve(newMessage);
   }
