@@ -9,6 +9,7 @@ import {
 } from "../ports/MessageGeneratorGatewayPort";
 import { MessageSchedulerPort } from "../ports/MessageSchedulerPort";
 import { UserGatewayPort } from "../ports/UserGatewayPort";
+import logger from "./logger";
 
 // 再帰処理を起動
 type GenerateMessageRecursiveProps = {
@@ -25,7 +26,7 @@ export const generateMessageRecursive = async (
   messageGeneratorGatewayPort: MessageGeneratorGatewayPort
 ): Promise<{ nextMessage: Message }> => {
   // 再帰処理をしているメッセージ(p.messageId)をGatewayに伝える
-  console.log("再帰処理をしているメッセージ(p.messageId)をGatewayに伝える", {
+  logger.info("再帰処理をしているメッセージ(p.messageId)をGatewayに伝える", {
     currentMessageId,
   });
   await messageSchedulerPort.setIsRecursiveGenerating({
@@ -34,7 +35,7 @@ export const generateMessageRecursive = async (
   });
 
   // まずは最初のメッセージを生成
-  console.log("まずは最初のメッセージを生成");
+  logger.info("まずは最初のメッセージを生成");
   const nextFirstMessage = await generateNextMsg(
     currentMessageId,
     apiKey,
@@ -46,18 +47,21 @@ export const generateMessageRecursive = async (
   );
 
   // 10回生成処理を投げる(本関数では最初に生成されたメッセージを返すので、ループは待たない)
-  console.log(
+  logger.info(
     "10回生成処理を投げる(本関数では最初に生成されたメッセージを返すので、ループは待たない)"
   );
   (async () => {
     let targetMsgId = nextFirstMessage.messageId;
     let i = 0;
-    while (i < 10) {
-      // 10回ループ
-      console.log("10回ループ", i, "targetMsgId", targetMsgId);
+    const LOOP_COUNT = 10;
+    while (i < LOOP_COUNT) {
+      logger.debug(`${LOOP_COUNT} 回ループする`, {
+        iteration: i,
+        targetMsgId,
+      });
       try {
         // 再帰処理をしているメッセージ(targetMsgId)をGatewayに伝える
-        console.log(
+        logger.info(
           "再帰処理をしているメッセージ(targetMsgId)をGatewayに伝える"
         );
         await messageSchedulerPort.setIsRecursiveGenerating({
@@ -77,20 +81,23 @@ export const generateMessageRecursive = async (
         i++;
       } catch (err) {
         // エラーが発報されるとループ終了
-        console.log("エラーが発報されるとループ終了");
-        console.error(err);
+        logger.error("エラーが発生したためループが終了した", {
+          error: err,
+          iteration: i,
+          targetMsgId,
+        });
         i = Number.MAX_VALUE;
       }
     }
     // ループが終了したら再帰処理を終了する
-    console.log("ループが終了したら再帰処理を終了する");
+    logger.info("ループが完了したので再帰処理を終了する", { targetMsgId });
     messageSchedulerPort.setIsRecursiveGenerating({
       currentMessageId: targetMsgId,
       isGenerating: false,
     });
   })();
   // 最初に生成したメッセージを返す
-  console.log("最初に生成したメッセージを返す");
+  logger.info("最初に生成したメッセージを返す");
   return { nextMessage: nextFirstMessage };
 };
 
@@ -196,7 +203,7 @@ const generateNextMsg = async (
     currentAiUserId = aiMembers[0]?.userId;
   }
   const currentAiMember = aiMembers.find((m) => m.userId === currentAiUserId);
-  console.log("currentAiMember", currentAiMember);
+  logger.info("currentAiMember", currentAiMember);
   if (!currentAiMember) {
     throw new UseCaseError(
       `member not found: ${currentAiUserId}`,
@@ -204,7 +211,7 @@ const generateNextMsg = async (
     );
   }
   const nextAiMember = aiMembers.find((m) => m.userId !== currentAiUserId);
-  console.log("nextAiMember", nextAiMember);
+  logger.info("nextAiMember", nextAiMember);
   if (!nextAiMember) {
     throw new UseCaseError(
       `other member not found: ${JSON.stringify(aiMembers)}`,
